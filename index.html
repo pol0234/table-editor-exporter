@@ -20,31 +20,23 @@
     </div>
   </header>
 
-  <!-- 2. EXCEL PÁS KARIET (RIBBON TABS) -->
-  <nav class="excel-ribbon-tabs">
-    <div class="ribbon-tab active">Domov</div>
-    <div class="ribbon-tab">Vložiť</div>
-    <div class="ribbon-tab">Rozloženie strany</div>
-    <div class="ribbon-tab">Zobrazenie</div>
-  </nav>
-
-  <!-- 3. EXCEL PÁS NÁSTROJOV (RIBBON TOOLBAR) -->
+  <!-- 2. EXCEL PÁS NÁSTROJOV (PRIAMO PRÍSTUPNÝ A ČISTÝ) -->
   <div class="excel-ribbon-toolbar">
     
-    <!-- Skupina Schránka -->
+    <!-- Skupina Avery Prenos (Hlavná akcia) -->
     <div class="ribbon-group">
       <button class="ribbon-btn ribbon-btn-lg ribbon-btn-avery" id="btnCopyAvery" title="Skopíruje ostrý obrázok tabuľky priamo do schránky (v Avery stačí stlačiť Ctrl+V)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
         <span>Kopírovať pre Avery</span>
       </button>
-      <div class="ribbon-group-title">Avery prenos</div>
+      <div class="ribbon-group-title">Avery prenos (Ctrl+V)</div>
     </div>
 
     <!-- Skupina Písmo (Font) -->
     <div class="ribbon-group">
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; gap: 4px;">
-          <select id="ribbonFontFamily" class="ribbon-select" style="width: 120px;">
+          <select id="ribbonFontFamily" class="ribbon-select" style="width: 110px;">
             <option value="Calibri" selected>Calibri</option>
             <option value="Arial">Arial</option>
             <option value="Segoe UI">Segoe UI</option>
@@ -55,15 +47,16 @@
             <option value="11" selected>11</option>
             <option value="12">12</option>
             <option value="14">14</option>
+            <option value="16">16</option>
           </select>
         </div>
         <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn" id="btnBold" title="Tučné písmo (Bold)"><strong>B</strong></button>
-          <button class="ribbon-btn" id="btnItalic" title="Kurzíva (Italic)"><em>I</em></button>
+          <button class="ribbon-btn" id="btnBold" title="Tučné písmo (Bold) pre vybrané bunky"><strong>B</strong></button>
+          <button class="ribbon-btn" id="btnItalic" title="Kurzíva (Italic) pre vybrané bunky"><em>I</em></button>
           
-          <!-- Dropdown orámovania -->
+          <!-- Dropdown orámovania s presnými voľbami z Excelu -->
           <div class="border-dropdown-wrapper">
-            <button class="ribbon-btn" id="btnBorderDropdown" title="Možnosti orámovania ako v Exceli">
+            <button class="ribbon-btn" id="btnBorderDropdown" title="Použiť orámovanie na vybrané bunky">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"></rect><line x1="3" y1="12" x2="21" y2="12"></line><line x1="12" y1="3" x2="12" y2="21"></line></svg>
               <span style="font-size: 0.65rem;">▼</span>
             </button>
@@ -96,25 +89,25 @@
           </div>
         </div>
       </div>
-      <div class="ribbon-group-title">Písmo</div>
+      <div class="ribbon-group-title">Písmo a rámčeky</div>
     </div>
 
-    <!-- Skupina Zarovnanie -->
+    <!-- Skupina Zarovnanie a Odsadenie -->
     <div class="ribbon-group">
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn" id="btnAlignLeft" title="Zarovnať doľava">
+          <button class="ribbon-btn" id="btnAlignLeft" title="Zarovnať vľavo">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
           </button>
           <button class="ribbon-btn" id="btnAlignCenter" title="Zarovnať na stred">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
           </button>
-          <button class="ribbon-btn" id="btnAlignRight" title="Zarovnať doprava">
+          <button class="ribbon-btn" id="btnAlignRight" title="Zarovnať vpravo">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
           </button>
         </div>
         <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn" id="btnIndentInc" title="Odsadiť doprava (pre z toho cukry...)">
+          <button class="ribbon-btn" id="btnIndentInc" title="Odsadiť doprava (napr. z toho cukry)">
             <span style="font-size: 0.78rem;">→| Odsadiť</span>
           </button>
           <button class="ribbon-btn" id="btnIndentDec" title="Zmenšiť odsadenie">
@@ -125,8 +118,17 @@
       <div class="ribbon-group-title">Zarovnanie</div>
     </div>
 
-    <!-- Skupina Export a Súbor -->
+    <!-- Skupina Výber tabuľky pre Avery -->
     <div class="ribbon-group">
+      <button class="ribbon-btn ribbon-btn-lg" id="btnSetExportRange" title="Nastaví aktuálne vybrané bunky ako oblasť nutričnej tabuľky pre Avery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
+        <span>Použiť výber</span>
+      </button>
+      <div class="ribbon-group-title">Výber pre Avery</div>
+    </div>
+
+    <!-- Skupina Export a Excel súbory -->
+    <div class="ribbon-group" style="border-right: none;">
       <button class="ribbon-btn ribbon-btn-lg" id="btnExportSvg" title="Stiahne čistý vektorový SVG súbor (neobmedzene zväčšiteľné v Avery)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
         <span>Stiahnuť SVG</span>
@@ -137,16 +139,16 @@
       </button>
       
       <input type="file" id="excelFilePicker" accept=".xlsx, .xls, .csv" style="display: none;">
-      <button class="ribbon-btn ribbon-btn-lg" id="btnUploadExcel" title="Nahrať existujúci súbor z Excelu (.xlsx)">
+      <button class="ribbon-btn ribbon-btn-lg" id="btnUploadExcel" title="Nahrať existujúci zošit z Excelu (.xlsx)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
         <span>Nahrať Excel</span>
       </button>
-      <div class="ribbon-group-title">Export & Súbory</div>
+      <div class="ribbon-group-title">Súbor & Export</div>
     </div>
 
   </div>
 
-  <!-- 4. EXCEL RIADOK VZORCOV (FORMULA BAR) -->
+  <!-- 3. EXCEL RIADOK VZORCOV (FORMULA BAR) -->
   <div class="excel-formula-bar">
     <div class="formula-name-box" id="formulaCellAddr">A1</div>
     <div class="formula-icons">
@@ -157,7 +159,7 @@
     <input type="text" class="formula-input" id="formulaInput" placeholder="Hodnota bunky...">
   </div>
 
-  <!-- 5. PRACOVNÁ PLOCHA S EXCEL TABUĽKOU & NÁHĽADOM PRE AVERY -->
+  <!-- 4. PRACOVNÁ PLOCHA S EXCEL TABUĽKOU & ROZŤAHOVATEĽNÝM NÁHĽADOM -->
   <div class="excel-workspace">
     
     <!-- Tabuľka s bunkami ako v Exceli -->
@@ -167,17 +169,40 @@
       </table>
     </div>
 
-    <!-- Bočný panel: Náhľad pre Avery -->
-    <aside class="avery-preview-drawer">
+    <!-- Draggable Splitter (Rozťahovač bočnej lišty náhľadu) -->
+    <div class="workspace-splitter" id="workspaceSplitter" title="Potiahnite myšou pre roztiahnutie alebo zúženie náhľadu"></div>
+
+    <!-- Bočný panel: Náhľad pre Avery (Roztiahnuteľný) -->
+    <aside class="avery-preview-drawer" id="averyPreviewDrawer">
       <div class="avery-drawer-header">
         <h3>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
           Náhľad pre Avery (Tlač)
         </h3>
-        <span style="font-size: 0.75rem; color: #666;">Živý prenos</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="avery-drawer-tool-btn" id="btnToggleDrawerExpand" title="Roztiahnuť / Zúžiť náhľad">↔️ Roztiahnuť</button>
+        </div>
       </div>
 
-      <div class="avery-drawer-body">
+      <!-- Výber lupy a pozadia priamo v náhľade -->
+      <div class="avery-preview-tools">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 0.78rem; color: #555;">Lupa:</span>
+          <select id="previewZoomSelect" class="ribbon-select" style="height: 24px; padding: 1px 4px; font-size: 0.78rem;">
+            <option value="0.8">80%</option>
+            <option value="1.0" selected>100% (Real)</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
+            <option value="2.0">200%</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button class="preview-bg-btn active" id="btnBgWhite" title="Biele pozadie">Biele</button>
+          <button class="preview-bg-btn" id="btnBgCheck" title="Šachovnicové pozadie pre priehľadnosť">Šachovnica</button>
+        </div>
+      </div>
+
+      <div class="avery-drawer-body viewport-white" id="previewViewport">
         <div class="preview-svg-box" id="previewSvgBox">
           <!-- Tu sa vykresľuje presná nutričná tabuľka pripravená na export -->
         </div>
@@ -197,7 +222,7 @@
 
   </div>
 
-  <!-- 6. EXCEL SPODNÝ PÁS SO ZÁLOŽKAMI HÁRKOV (TABS AT BOTTOM) -->
+  <!-- 5. EXCEL SPODNÝ PÁS SO ZÁLOŽKAMI HÁRKOV (TABS AT BOTTOM) -->
   <footer class="excel-bottom-bar">
     <div class="sheet-nav-area">
       <div class="sheet-tabs-list" id="sheetTabs">
@@ -207,8 +232,8 @@
     </div>
 
     <div class="status-area">
-      <span>Pripravené</span>
-      <span>100 %</span>
+      <span id="statusBarSelection">Pripravené</span>
+      <span id="statusBarRange">Tabuľka: A1:B8</span>
     </div>
   </footer>
 

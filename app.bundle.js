@@ -3,6 +3,7 @@
   'use strict';
 
   const STORAGE_KEY = 'oco_excel_nutrition_sheets_v2';
+  const DRAWER_WIDTH_KEY = 'oco_avery_drawer_width';
 
   // --- Initial Default Products Matching User's Excel Sheets ---
   function createDefaultSheets() {
@@ -115,6 +116,7 @@
     sheets: createDefaultSheets(),
     activeSheetId: 's_papaya',
     selectedCell: 'A1',
+    selectionRange: { startCol: 'A', startRow: 1, endCol: 'A', endRow: 1 },
     zoom: 1.0,
     fontFamily: 'Calibri',
     fontSize: 11
@@ -169,6 +171,16 @@
   const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
   const ROWS_COUNT = 24;
 
+  function colIndex(col) {
+    return COLUMNS.indexOf(col);
+  }
+
+  function parseAddr(addr) {
+    const col = addr.replace(/[0-9]/g, '');
+    const row = parseInt(addr.replace(/[^0-9]/g, ''), 10);
+    return { col, row };
+  }
+
   // --- DOM References ---
   const sheetTabsContainer = document.getElementById('sheetTabs');
   const addSheetBtn = document.getElementById('addSheetBtn');
@@ -176,6 +188,8 @@
   const formulaCellAddr = document.getElementById('formulaCellAddr');
   const formulaInput = document.getElementById('formulaInput');
   const previewSvgBox = document.getElementById('previewSvgBox');
+  const statusBarSelection = document.getElementById('statusBarSelection');
+  const statusBarRange = document.getElementById('statusBarRange');
 
   // Ribbon Tools
   const fontSelect = document.getElementById('ribbonFontFamily');
@@ -189,11 +203,32 @@
   const alignRightBtn = document.getElementById('btnAlignRight');
   const indentIncBtn = document.getElementById('btnIndentInc');
   const indentDecBtn = document.getElementById('btnIndentDec');
+  const btnSetExportRange = document.getElementById('btnSetExportRange');
+
   const btnCopyAvery = document.getElementById('btnCopyAvery');
   const btnExportSvg = document.getElementById('btnExportSvg');
   const btnExportPng = document.getElementById('btnExportPng');
   const btnUploadExcel = document.getElementById('btnUploadExcel');
   const excelFilePicker = document.getElementById('excelFilePicker');
+
+  // Drawer & Splitter
+  const averyPreviewDrawer = document.getElementById('averyPreviewDrawer');
+  const workspaceSplitter = document.getElementById('workspaceSplitter');
+  const btnToggleDrawerExpand = document.getElementById('btnToggleDrawerExpand');
+  const previewZoomSelect = document.getElementById('previewZoomSelect');
+  const previewViewport = document.getElementById('previewViewport');
+  const btnBgWhite = document.getElementById('btnBgWhite');
+  const btnBgCheck = document.getElementById('btnBgCheck');
+
+  // Restore drawer width
+  const savedDrawerWidth = localStorage.getItem(DRAWER_WIDTH_KEY);
+  if (savedDrawerWidth && averyPreviewDrawer) {
+    averyPreviewDrawer.style.width = savedDrawerWidth + 'px';
+  }
+
+  // --- Selection State ---
+  let isDraggingSelection = false;
+  let dragAnchor = { col: 'A', row: 1 };
 
   // --- Render Sheet Tabs at Bottom ---
   function renderSheetTabs() {
@@ -312,19 +347,33 @@
         const td = document.createElement('td');
         td.className = 'grid-cell';
         td.dataset.addr = addr;
+        td.dataset.col = col;
+        td.dataset.row = r;
         td.contentEditable = 'true';
         td.spellcheck = false;
 
-        // Apply borders & formatting classes
+        // Apply borders & formatting
         applyCellStyles(td, cellData);
 
-        if (addr === appState.selectedCell) {
-          td.classList.add('selected');
-        }
+        // Mouse Drag Selection Handlers
+        td.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return; // Left click only
+          isDraggingSelection = true;
+          dragAnchor = { col, row: r };
+          updateSelectionRange(col, r, col, r);
+        });
 
-        // Cell Selection
+        td.addEventListener('mouseenter', () => {
+          if (isDraggingSelection) {
+            updateSelectionRange(dragAnchor.col, dragAnchor.row, col, r);
+          }
+        });
+
+        // Cell Selection on focus
         td.addEventListener('focus', () => {
-          selectCell(addr);
+          if (!isDraggingSelection) {
+            updateSelectionRange(col, r, col, r);
+          }
         });
 
         // Cell Typing / Editing
@@ -355,7 +404,15 @@
     gridTable.appendChild(tbody);
 
     setupColumnResize();
+    refreshSelectionVisuals();
   }
+
+  // Window mouseup ends drag selection
+  window.addEventListener('mouseup', () => {
+    if (isDraggingSelection) {
+      isDraggingSelection = false;
+    }
+  });
 
   function applyCellStyles(td, cellData) {
     td.innerText = cellData.v || '';
@@ -379,25 +436,82 @@
     return '1px solid #e1dfdd'; // Default grid border
   }
 
-  function selectCell(addr) {
-    appState.selectedCell = addr;
-    formulaCellAddr.textContent = addr;
-    
-    // Highlight in grid
-    document.querySelectorAll('.grid-cell.selected').forEach(el => el.classList.remove('selected'));
-    const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
-    if (td) {
-      td.classList.add('selected');
+  // --- Excel Drag Selection Range Logic ---
+  function updateSelectionRange(startCol, startRow, endCol, endRow) {
+    const sC = Math.min(colIndex(startCol), colIndex(endCol));
+    const eC = Math.max(colIndex(startCol), colIndex(endCol));
+    const sR = Math.min(startRow, endRow);
+    const eR = Math.max(startRow, endRow);
+
+    appState.selectionRange = {
+      startCol: COLUMNS[sC],
+      startRow: sR,
+      endCol: COLUMNS[eC],
+      endRow: eR
+    };
+
+    appState.selectedCell = `${startCol}${startRow}`;
+
+    // Update Formula bar address box
+    if (sC === eC && sR === eR) {
+      formulaCellAddr.textContent = `${startCol}${startRow}`;
+      if (statusBarSelection) statusBarSelection.textContent = `Bunka: ${startCol}${startRow}`;
+    } else {
+      formulaCellAddr.textContent = `${COLUMNS[sC]}${sR}:${COLUMNS[eC]}${eR}`;
+      const count = (eC - sC + 1) * (eR - sR + 1);
+      if (statusBarSelection) statusBarSelection.textContent = `Výber: ${COLUMNS[sC]}${sR}:${COLUMNS[eC]}${eR} (${count} buniek)`;
     }
 
-    // Sync formula bar and ribbon
+    // Sync formula input with active anchor cell
     const sheet = getActiveSheet();
-    const cellData = (sheet.cells && sheet.cells[addr]) || { v: '' };
+    const cellData = (sheet.cells && sheet.cells[appState.selectedCell]) || { v: '' };
     formulaInput.value = cellData.v || '';
 
     // Ribbon states
     boldBtn.classList.toggle('active', !!cellData.bold);
     italicBtn.classList.toggle('active', !!cellData.italic);
+
+    refreshSelectionVisuals();
+  }
+
+  function refreshSelectionVisuals() {
+    const range = appState.selectionRange || { startCol: 'A', startRow: 1, endCol: 'A', endRow: 1 };
+    const sC = colIndex(range.startCol);
+    const eC = colIndex(range.endCol);
+    const sR = range.startRow;
+    const eR = range.endRow;
+
+    gridTable.querySelectorAll('td.grid-cell').forEach(td => {
+      const c = colIndex(td.dataset.col);
+      const r = parseInt(td.dataset.row, 10);
+      const isAnchor = td.dataset.addr === appState.selectedCell;
+
+      td.classList.toggle('selected', isAnchor);
+
+      const inRange = (c >= sC && c <= eC && r >= sR && r <= eR);
+      td.classList.toggle('in-range', inRange);
+      td.classList.toggle('range-top', inRange && r === sR);
+      td.classList.toggle('range-bottom', inRange && r === eR);
+      td.classList.toggle('range-left', inRange && c === sC);
+      td.classList.toggle('range-right', inRange && c === eC);
+      td.classList.toggle('range-corner-handle', inRange && c === eC && r === eR);
+    });
+  }
+
+  function getCellsInRange() {
+    const range = appState.selectionRange || { startCol: 'A', startRow: 1, endCol: 'A', endRow: 1 };
+    const sC = colIndex(range.startCol);
+    const eC = colIndex(range.endCol);
+    const sR = range.startRow;
+    const eR = range.endRow;
+
+    const list = [];
+    for (let r = sR; r <= eR; r++) {
+      for (let c = sC; c <= eC; c++) {
+        list.push({ col: COLUMNS[c], row: r, addr: `${COLUMNS[c]}${r}` });
+      }
+    }
+    return list;
   }
 
   function setCellValue(addr, value) {
@@ -419,75 +533,96 @@
     updatePreview();
   });
 
-  // --- Ribbon Button Handlers ---
+  // --- Ribbon Button Handlers Applied to Entire Selection Range ---
   boldBtn.addEventListener('click', () => {
-    const addr = appState.selectedCell;
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
-    if (!sheet.cells[addr]) sheet.cells[addr] = { v: '' };
-    sheet.cells[addr].bold = !sheet.cells[addr].bold;
-    boldBtn.classList.toggle('active', !!sheet.cells[addr].bold);
-    
-    const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
-    if (td) applyCellStyles(td, sheet.cells[addr]);
+    const cells = getCellsInRange();
+    const anchorData = sheet.cells[appState.selectedCell] || {};
+    const targetBold = !anchorData.bold;
+
+    cells.forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].bold = targetBold;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+
+    boldBtn.classList.toggle('active', targetBold);
+    refreshSelectionVisuals();
     saveAppState();
     updatePreview();
   });
 
   italicBtn.addEventListener('click', () => {
-    const addr = appState.selectedCell;
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
-    if (!sheet.cells[addr]) sheet.cells[addr] = { v: '' };
-    sheet.cells[addr].italic = !sheet.cells[addr].italic;
-    italicBtn.classList.toggle('active', !!sheet.cells[addr].italic);
-    
-    const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
-    if (td) applyCellStyles(td, sheet.cells[addr]);
+    const cells = getCellsInRange();
+    const anchorData = sheet.cells[appState.selectedCell] || {};
+    const targetItalic = !anchorData.italic;
+
+    cells.forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].italic = targetItalic;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+
+    italicBtn.classList.toggle('active', targetItalic);
+    refreshSelectionVisuals();
     saveAppState();
     updatePreview();
   });
 
-  // Alignments
-  alignLeftBtn.addEventListener('click', () => applyCellProp('align', 'left'));
-  alignCenterBtn.addEventListener('click', () => applyCellProp('align', 'center'));
-  alignRightBtn.addEventListener('click', () => applyCellProp('align', 'right'));
+  // Alignments for Selection
+  alignLeftBtn.addEventListener('click', () => applyRangeProp('align', 'left'));
+  alignCenterBtn.addEventListener('click', () => applyRangeProp('align', 'center'));
+  alignRightBtn.addEventListener('click', () => applyRangeProp('align', 'right'));
 
-  // Indents
+  // Indents for Selection
   indentIncBtn.addEventListener('click', () => {
-    const addr = appState.selectedCell;
     const sheet = getActiveSheet();
-    if (!sheet.cells[addr]) sheet.cells[addr] = { v: '' };
-    sheet.cells[addr].indent = (sheet.cells[addr].indent || 0) + 16;
-    const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
-    if (td) applyCellStyles(td, sheet.cells[addr]);
+    if (!sheet.cells) sheet.cells = {};
+    getCellsInRange().forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].indent = (sheet.cells[item.addr].indent || 0) + 16;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+    refreshSelectionVisuals();
     saveAppState();
     updatePreview();
   });
 
   indentDecBtn.addEventListener('click', () => {
-    const addr = appState.selectedCell;
     const sheet = getActiveSheet();
-    if (!sheet.cells[addr]) sheet.cells[addr] = { v: '' };
-    sheet.cells[addr].indent = Math.max(0, (sheet.cells[addr].indent || 0) - 16);
-    const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
-    if (td) applyCellStyles(td, sheet.cells[addr]);
+    if (!sheet.cells) sheet.cells = {};
+    getCellsInRange().forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].indent = Math.max(0, (sheet.cells[item.addr].indent || 0) - 16);
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+    refreshSelectionVisuals();
     saveAppState();
     updatePreview();
   });
 
-  function applyCellProp(prop, value) {
-    const addr = appState.selectedCell;
+  function applyRangeProp(prop, value) {
     const sheet = getActiveSheet();
-    if (!sheet.cells[addr]) sheet.cells[addr] = { v: '' };
-    sheet.cells[addr][prop] = value;
-    const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
-    if (td) applyCellStyles(td, sheet.cells[addr]);
+    if (!sheet.cells) sheet.cells = {};
+    getCellsInRange().forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr][prop] = value;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+    refreshSelectionVisuals();
     saveAppState();
     updatePreview();
   }
 
-  // --- Borders Dropdown Menu ---
+  // --- Borders Dropdown Menu Applied to Selected Range ---
   borderDropdownBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     borderMenu.classList.toggle('open');
@@ -501,51 +636,72 @@
     item.addEventListener('click', (e) => {
       e.stopPropagation();
       const type = item.dataset.border;
-      applyBorderToTable(type);
+      applyBorderToSelection(type);
       borderMenu.classList.remove('open');
     });
   });
 
-  function applyBorderToTable(type) {
+  function applyBorderToSelection(type) {
     const sheet = getActiveSheet();
-    const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
-    const cols = ['A', 'B'];
+    if (!sheet.cells) sheet.cells = {};
+    const range = appState.selectionRange || sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
+    const sC = colIndex(range.startCol);
+    const eC = colIndex(range.endCol);
+    const sR = range.startRow;
+    const eR = range.endRow;
 
-    for (let r = range.startRow; r <= range.endRow; r++) {
-      cols.forEach((col, cIdx) => {
-        const addr = col + r;
+    for (let r = sR; r <= eR; r++) {
+      for (let c = sC; c <= eC; c++) {
+        const addr = `${COLUMNS[c]}${r}`;
         if (!sheet.cells[addr]) sheet.cells[addr] = { v: '' };
-        const c = sheet.cells[addr];
+        const cell = sheet.cells[addr];
 
         if (type === 'all') {
-          c.borderTop = 'thin';
-          c.borderBottom = 'thin';
-          c.borderLeft = 'thin';
-          c.borderRight = 'thin';
+          cell.borderTop = 'thin';
+          cell.borderBottom = 'thin';
+          cell.borderLeft = 'thin';
+          cell.borderRight = 'thin';
         } else if (type === 'thick-box') {
-          if (r === range.startRow) c.borderTop = 'thick';
-          if (r === range.endRow) c.borderBottom = 'thick';
-          if (cIdx === 0) c.borderLeft = 'thick';
-          if (cIdx === cols.length - 1) c.borderRight = 'thick';
-        } else if (type === 'thick-bottom') {
-          if (r === range.endRow) c.borderBottom = 'thick';
-        } else if (type === 'double-bottom') {
-          if (r === range.endRow) c.borderBottom = 'double';
+          if (r === sR) cell.borderTop = 'thick';
+          if (r === eR) cell.borderBottom = 'thick';
+          if (c === sC) cell.borderLeft = 'thick';
+          if (c === eC) cell.borderRight = 'thick';
         } else if (type === 'header-thick') {
-          if (r === range.startRow) c.borderBottom = 'thick';
+          if (r === sR) cell.borderBottom = 'thick';
+        } else if (type === 'thick-bottom') {
+          if (r === eR) cell.borderBottom = 'thick';
+        } else if (type === 'double-bottom') {
+          if (r === eR) cell.borderBottom = 'double';
         } else if (type === 'none') {
-          c.borderTop = 'none';
-          c.borderBottom = 'none';
-          c.borderLeft = 'none';
-          c.borderRight = 'none';
+          cell.borderTop = 'none';
+          cell.borderBottom = 'none';
+          cell.borderLeft = 'none';
+          cell.borderRight = 'none';
         }
-      });
+
+        const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
+        if (td) applyCellStyles(td, cell);
+      }
     }
 
+    refreshSelectionVisuals();
     saveAppState();
-    renderGrid();
     updatePreview();
-    showToast(`Použité orámovanie: ${type}`);
+    showToast(`Orámovanie "${type}" bolo použité na výber.`);
+  }
+
+  // --- Button: Nastaviť výber ako tabuľku pre Avery ---
+  if (btnSetExportRange) {
+    btnSetExportRange.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      sheet.exportRange = Object.assign({}, appState.selectionRange);
+      if (statusBarRange) {
+        statusBarRange.textContent = `Tabuľka: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
+      }
+      saveAppState();
+      updatePreview();
+      showToast(`Oblasť pre Avery nastavená na ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}!`);
+    });
   }
 
   // --- Column Resize Logic ---
@@ -578,8 +734,8 @@
       sheet.colWidths[colName] = newWidth;
 
       // Update colgroup width directly
-      const colIndex = COLUMNS.indexOf(colName) + 1; // +1 for row number col
-      const colEl = gridTable.querySelectorAll('col')[colIndex];
+      const colIdx = COLUMNS.indexOf(colName) + 1; // +1 for row number col
+      const colEl = gridTable.querySelectorAll('col')[colIdx];
       if (colEl) colEl.style.width = newWidth + 'px';
     });
 
@@ -593,15 +749,94 @@
     });
   }
 
+  // --- Interactive Splitter for Avery Preview Drawer ---
+  if (workspaceSplitter && averyPreviewDrawer) {
+    let isDraggingSplitter = false;
+    let startMouseX = 0;
+    let startDrawerW = 0;
+
+    workspaceSplitter.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isDraggingSplitter = true;
+      startMouseX = e.clientX;
+      startDrawerW = averyPreviewDrawer.offsetWidth;
+      workspaceSplitter.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingSplitter) return;
+      const deltaX = startMouseX - e.clientX; // Dragging left increases width
+      const newWidth = Math.min(850, Math.max(320, startDrawerW + deltaX));
+      averyPreviewDrawer.style.width = newWidth + 'px';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDraggingSplitter) {
+        isDraggingSplitter = false;
+        workspaceSplitter.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        localStorage.setItem(DRAWER_WIDTH_KEY, averyPreviewDrawer.offsetWidth);
+      }
+    });
+  }
+
+  // Toggle Drawer Expand Button
+  if (btnToggleDrawerExpand) {
+    btnToggleDrawerExpand.addEventListener('click', () => {
+      const isExpanded = averyPreviewDrawer.classList.toggle('expanded');
+      btnToggleDrawerExpand.textContent = isExpanded ? '← Zúžiť' : '↔️ Roztiahnuť';
+      if (!isExpanded) {
+        averyPreviewDrawer.style.width = '420px';
+      } else {
+        averyPreviewDrawer.style.width = '640px';
+      }
+      localStorage.setItem(DRAWER_WIDTH_KEY, averyPreviewDrawer.offsetWidth);
+    });
+  }
+
+  // Zoom Selector
+  if (previewZoomSelect && previewSvgBox) {
+    previewZoomSelect.addEventListener('change', () => {
+      const scale = parseFloat(previewZoomSelect.value);
+      previewSvgBox.style.transform = `scale(${scale})`;
+    });
+  }
+
+  // Background Toggle (White vs. Checkerboard)
+  if (btnBgWhite && btnBgCheck && previewViewport) {
+    btnBgWhite.addEventListener('click', () => {
+      btnBgWhite.classList.add('active');
+      btnBgCheck.classList.remove('active');
+      previewViewport.className = 'avery-drawer-body viewport-white';
+    });
+
+    btnBgCheck.addEventListener('click', () => {
+      btnBgCheck.classList.add('active');
+      btnBgWhite.classList.remove('active');
+      previewViewport.className = 'avery-drawer-body viewport-checkerboard';
+    });
+  }
+
   // --- SVG Live Preview Generator ---
   function generateTableSVG(sheet) {
     const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
     const colWidths = sheet.colWidths || {};
     const rowHeights = sheet.rowHeights || {};
 
-    const wA = colWidths['A'] || 220;
-    const wB = colWidths['B'] || 110;
-    const totalW = wA + wB;
+    const sC = colIndex(range.startCol);
+    const eC = colIndex(range.endCol);
+
+    const activeCols = [];
+    let totalW = 0;
+    for (let c = sC; c <= eC; c++) {
+      const colLetter = COLUMNS[c];
+      const w = colWidths[colLetter] || (colLetter === 'A' ? 220 : (colLetter === 'B' ? 110 : 70));
+      activeCols.push({ col: colLetter, width: w, x: totalW });
+      totalW += w;
+    }
 
     let totalH = 0;
     const rowPositions = [];
@@ -623,7 +858,7 @@
     svg += `  .right { text-anchor: end; }\n`;
     svg += `</style>\n</defs>\n`;
 
-    // White background
+    // Background
     svg += `<rect x="${margin}" y="${margin}" width="${totalW}" height="${totalH}" fill="#ffffff" />\n`;
 
     // Render cells
@@ -632,57 +867,51 @@
       const y = rp.y + margin;
       const h = rp.height;
 
-      const cellA = (sheet.cells && sheet.cells['A' + r]) || { v: '' };
-      const cellB = (sheet.cells && sheet.cells['B' + r]) || { v: '' };
+      activeCols.forEach((ac, colIndexInTable) => {
+        const addr = `${ac.col}${r}`;
+        const cell = (sheet.cells && sheet.cells[addr]) || { v: '' };
+        const cellX = margin + ac.x;
+        const cellW = ac.width;
 
-      // Text A
-      const textAY = y + h / 2;
-      const indentX = cellA.indent || 0;
-      const textAX = margin + 8 + indentX;
-      const classA = cellA.bold ? 'bold' : '';
-      
-      const valALines = String(cellA.v || '').split('\n');
-      if (valALines.length === 1) {
-        const anchorA = cellA.align === 'center' ? ' class="center ' + classA + '" x="' + (margin + wA / 2) + '"' : ' class="' + classA + '" x="' + textAX + '"';
-        svg += `<text y="${textAY}"${anchorA}>${escapeXml(cellA.v)}</text>\n`;
-      } else {
-        svg += `<text x="${textAX}" y="${textAY - 6}" class="${classA}">`;
-        valALines.forEach((line, idx) => {
-          svg += `<tspan x="${textAX}" dy="${idx === 0 ? 0 : 14}">${escapeXml(line)}</tspan>`;
-        });
-        svg += `</text>\n`;
-      }
+        const textY = y + h / 2;
+        const indentX = cell.indent || 0;
+        const textClass = cell.bold ? 'bold' : '';
 
-      // Text B
-      const textBY = y + h / 2;
-      const classB = cellB.bold ? 'bold' : '';
-      const valBLines = String(cellB.v || '').split('\n');
-
-      if (valBLines.length === 1) {
-        if (cellB.align === 'center') {
-          svg += `<text x="${margin + wA + wB / 2}" y="${textBY}" class="center ${classB}">${escapeXml(cellB.v)}</text>\n`;
+        const valLines = String(cell.v || '').split('\n');
+        if (valLines.length === 1) {
+          if (cell.align === 'center') {
+            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}">${escapeXml(cell.v)}</text>\n`;
+          } else if (cell.align === 'right') {
+            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}">${escapeXml(cell.v)}</text>\n`;
+          } else {
+            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}">${escapeXml(cell.v)}</text>\n`;
+          }
         } else {
-          svg += `<text x="${margin + totalW - 8}" y="${textBY}" class="right ${classB}">${escapeXml(cellB.v)}</text>\n`;
-        }
-      } else {
-        // Multi-line value (kJ / kcal)
-        const startY = textBY - ((valBLines.length - 1) * 7);
-        svg += `<text x="${margin + totalW - 8}" y="${startY}" class="right ${classB}">`;
-        valBLines.forEach((line, idx) => {
-          svg += `<tspan x="${margin + totalW - 8}" dy="${idx === 0 ? 0 : 15}">${escapeXml(line)}</tspan>`;
-        });
-        svg += `</text>\n`;
-      }
+          // Multiline cell (kJ / kcal)
+          const startY = textY - ((valLines.length - 1) * 7);
+          const posX = cell.align === 'right' ? (cellX + cellW - 8) : (cellX + 8 + indentX);
+          const anchorClass = cell.align === 'right' ? 'right ' + textClass : textClass;
 
-      // Horizontal Borders
-      if (cellA.borderBottom && cellA.borderBottom !== 'none') {
-        const strokeW = cellA.borderBottom === 'thick' ? 2 : (cellA.borderBottom === 'double' ? 3 : 1);
-        svg += `<line x1="${margin}" y1="${y + h}" x2="${margin + totalW}" y2="${y + h}" stroke="#000000" stroke-width="${strokeW}" />\n`;
-      }
+          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}">`;
+          valLines.forEach((line, idx) => {
+            svg += `<tspan x="${posX}" dy="${idx === 0 ? 0 : 15}">${escapeXml(line)}</tspan>`;
+          });
+          svg += `</text>\n`;
+        }
+
+        // Horizontal bottom border
+        if (cell.borderBottom && cell.borderBottom !== 'none') {
+          const strokeW = cell.borderBottom === 'thick' ? 2 : (cell.borderBottom === 'double' ? 3 : 1);
+          svg += `<line x1="${cellX}" y1="${y + h}" x2="${cellX + cellW}" y2="${y + h}" stroke="#000000" stroke-width="${strokeW}" />\n`;
+        }
+      });
     });
 
-    // Vertical Divider
-    svg += `<line x1="${margin + wA}" y1="${margin}" x2="${margin + wA}" y2="${margin + totalH}" stroke="#000000" stroke-width="1" />\n`;
+    // Vertical Divider between columns
+    for (let c = 1; c < activeCols.length; c++) {
+      const divX = margin + activeCols[c].x;
+      svg += `<line x1="${divX}" y1="${margin}" x2="${divX}" y2="${margin + totalH}" stroke="#000000" stroke-width="1" />\n`;
+    }
 
     // Outer Box Border
     svg += `<rect x="${margin}" y="${margin}" width="${totalW}" height="${totalH}" fill="none" stroke="#000000" stroke-width="2" />\n`;
@@ -706,6 +935,9 @@
     const { svg } = generateTableSVG(sheet);
     if (previewSvgBox) {
       previewSvgBox.innerHTML = svg;
+    }
+    if (statusBarRange && sheet.exportRange) {
+      statusBarRange.textContent = `Tabuľka pre Avery: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
     }
   }
 
@@ -905,6 +1137,6 @@
   renderSheetTabs();
   renderGrid();
   updatePreview();
-  selectCell('A1');
+  updateSelectionRange('A', 1, 'B', 8);
 
 })();

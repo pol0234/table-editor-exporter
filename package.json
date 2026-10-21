@@ -1,0 +1,13 @@
+{
+  "name": "oco-nutrition-tables",
+  "version": "1.0.0",
+  "description": "Nutrition table generator and Avery exporter with authentic Excel UI",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:ui": "node tests/playwright-verify.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}
