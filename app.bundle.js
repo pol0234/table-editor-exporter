@@ -41,12 +41,152 @@
     return { width: 0, style: 'none', color: 'transparent' };
   }
 
+  function hasExplicitBorder(b) {
+    if (!b) return false;
+    const norm = normalizeBorder(b);
+    return norm.width > 0 && norm.style !== 'none' && norm.color !== 'transparent';
+  }
+
   function getBorderCss(b) {
     const norm = normalizeBorder(b);
     if (norm.width <= 0 || norm.style === 'none') {
-      return '1px solid #e1dfdd'; // Default subtle Excel grid border
+      return '1px solid #d4d4d4'; // Default subtle Excel grid border
     }
     return `${norm.width}px ${norm.style} ${norm.color}`;
+  }
+
+  function resolveCellBorder(cIdx, r, side, sheet) {
+    if (!sheet || !sheet.cells) sheet = getActiveSheet();
+    if (!sheet || !sheet.cells) return '1px solid #d4d4d4';
+
+    const colLetter = COLUMNS[cIdx];
+    const addr = `${colLetter}${r}`;
+    const cell = sheet.cells[addr];
+
+    let ownBorder = null;
+    let neighborBorder = null;
+    let neighborCell = null;
+
+    if (side === 'top') {
+      ownBorder = cell ? cell.borderTop : null;
+      if (r > 1) {
+        neighborCell = sheet.cells[`${colLetter}${r - 1}`];
+        neighborBorder = neighborCell ? neighborCell.borderBottom : null;
+      }
+    } else if (side === 'bottom') {
+      ownBorder = cell ? cell.borderBottom : null;
+      if (r < ROWS_COUNT) {
+        neighborCell = sheet.cells[`${colLetter}${r + 1}`];
+        neighborBorder = neighborCell ? neighborCell.borderTop : null;
+      }
+    } else if (side === 'left') {
+      ownBorder = cell ? cell.borderLeft : null;
+      if (cIdx > 0) {
+        neighborCell = sheet.cells[`${COLUMNS[cIdx - 1]}${r}`];
+        neighborBorder = neighborCell ? neighborCell.borderRight : null;
+      }
+    } else if (side === 'right') {
+      ownBorder = cell ? cell.borderRight : null;
+      if (cIdx < COLUMNS.length - 1) {
+        neighborCell = sheet.cells[`${COLUMNS[cIdx + 1]}${r}`];
+        neighborBorder = neighborCell ? neighborCell.borderLeft : null;
+      }
+    }
+
+    const hasOwn = hasExplicitBorder(ownBorder);
+    const hasNeigh = hasExplicitBorder(neighborBorder);
+
+    // 1. Explicit border wins! Both sides of the edge agree symmetrically
+    if (hasOwn && hasNeigh) {
+      const nOwn = normalizeBorder(ownBorder);
+      const nNeigh = normalizeBorder(neighborBorder);
+      const chosen = (nOwn.width >= nNeigh.width) ? nOwn : nNeigh;
+      return `${chosen.width}px ${chosen.style} ${chosen.color}`;
+    }
+    if (hasOwn) {
+      const n = normalizeBorder(ownBorder);
+      return `${n.width}px ${n.style} ${n.color}`;
+    }
+    if (hasNeigh) {
+      const n = normalizeBorder(neighborBorder);
+      return `${n.width}px ${n.style} ${n.color}`;
+    }
+
+    // 2. No explicit border: check fill behavior (White / Color Fill vs Default Gridlines)
+    const cellFill = (cell && cell.fillColor && cell.fillColor !== 'transparent' && cell.fillColor !== 'none') ? cell.fillColor : null;
+    const neighFill = (neighborCell && neighborCell.fillColor && neighborCell.fillColor !== 'transparent' && neighborCell.fillColor !== 'none') ? neighborCell.fillColor : null;
+
+    if (cellFill || neighFill) {
+      const fillToUse = cellFill || neighFill;
+      // Seamless solid surface: hide gray gridline by matching the fill color
+      return `1px solid ${fillToUse}`;
+    }
+
+    // Default subtle Excel gridline
+    return '1px solid #d4d4d4';
+  }
+
+  function resolveBorderObj(cIdx, r, side, sheet) {
+    if (!sheet || !sheet.cells) return null;
+    const colLetter = COLUMNS[cIdx];
+    const addr = `${colLetter}${r}`;
+    const cell = sheet.cells[addr];
+
+    let ownBorder = null;
+    let neighborBorder = null;
+
+    if (side === 'top') {
+      ownBorder = cell ? cell.borderTop : null;
+      if (r > 1) {
+        const n = sheet.cells[`${colLetter}${r - 1}`];
+        neighborBorder = n ? n.borderBottom : null;
+      }
+    } else if (side === 'bottom') {
+      ownBorder = cell ? cell.borderBottom : null;
+      if (r < ROWS_COUNT) {
+        const n = sheet.cells[`${colLetter}${r + 1}`];
+        neighborBorder = n ? n.borderTop : null;
+      }
+    } else if (side === 'left') {
+      ownBorder = cell ? cell.borderLeft : null;
+      if (cIdx > 0) {
+        const n = sheet.cells[`${COLUMNS[cIdx - 1]}${r}`];
+        neighborBorder = n ? n.borderRight : null;
+      }
+    } else if (side === 'right') {
+      ownBorder = cell ? cell.borderRight : null;
+      if (cIdx < COLUMNS.length - 1) {
+        const n = sheet.cells[`${COLUMNS[cIdx + 1]}${r}`];
+        neighborBorder = n ? n.borderLeft : null;
+      }
+    }
+
+    if (hasExplicitBorder(ownBorder) && hasExplicitBorder(neighborBorder)) {
+      const nOwn = normalizeBorder(ownBorder);
+      const nNeigh = normalizeBorder(neighborBorder);
+      return (nOwn.width >= nNeigh.width) ? nOwn : nNeigh;
+    }
+    if (hasExplicitBorder(ownBorder)) return normalizeBorder(ownBorder);
+    if (hasExplicitBorder(neighborBorder)) return normalizeBorder(neighborBorder);
+    return null;
+  }
+
+  function refreshAllGridBorders(sheet) {
+    if (!sheet) sheet = getActiveSheet();
+    if (!gridTable || !sheet) return;
+    for (let r = 1; r <= ROWS_COUNT; r++) {
+      for (let c = 0; c < COLUMNS.length; c++) {
+        const col = COLUMNS[c];
+        const addr = `${col}${r}`;
+        const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
+        if (td) {
+          td.style.borderTop = resolveCellBorder(c, r, 'top', sheet);
+          td.style.borderBottom = resolveCellBorder(c, r, 'bottom', sheet);
+          td.style.borderLeft = resolveCellBorder(c, r, 'left', sheet);
+          td.style.borderRight = resolveCellBorder(c, r, 'right', sheet);
+        }
+      }
+    }
   }
 
   // --- Initial Default Products Matching User's Excel Sheets ---
@@ -54,7 +194,15 @@
     const thickBox = { width: 2, style: 'solid', color: '#000000' };
     const thinInner = { width: 1, style: 'solid', color: '#000000' };
 
-    return [
+    function withWhite(cellsObj) {
+      const res = {};
+      for (const k in cellsObj) {
+        res[k] = Object.assign({ fillColor: '#ffffff' }, cellsObj[k]);
+      }
+      return res;
+    }
+
+    const sheets = [
       {
         id: 's_papaya',
         name: 'Soft-Dried-Papaya',
@@ -156,6 +304,11 @@
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       }
     ];
+
+    sheets.forEach(sh => {
+      if (sh.cells) sh.cells = withWhite(sh.cells);
+    });
+    return sheets;
   }
 
   // --- State ---
@@ -181,6 +334,13 @@
           if (!sh.colWidths) sh.colWidths = {};
           if (!sh.colWidths.A || sh.colWidths.A < 260) {
             sh.colWidths.A = 270;
+          }
+          if (sh.cells) {
+            for (const addr in sh.cells) {
+              if (sh.cells[addr].fillColor === undefined) {
+                sh.cells[addr].fillColor = '#ffffff';
+              }
+            }
           }
         });
       }
@@ -322,6 +482,8 @@
   const btnFillColorWrap = document.getElementById('btnFillColorWrap');
   const textColorBar = document.getElementById('textColorBar');
   const fillColorBar = document.getElementById('fillColorBar');
+  const btnFillWhiteQuick = document.getElementById('btnFillWhiteQuick');
+  const btnFillNoneQuick = document.getElementById('btnFillNoneQuick');
 
   // Border Controls
   const borderDropdownBtn = document.getElementById('btnBorderDropdown');
@@ -396,6 +558,10 @@
   const ctxBorderNone = document.getElementById('ctxBorderNone');
   const ctxBorderWidth = document.getElementById('ctxBorderWidth');
   const ctxBorderColor = document.getElementById('ctxBorderColor');
+  const ctxFillWhite = document.getElementById('ctxFillWhite');
+  const ctxFillNone = document.getElementById('ctxFillNone');
+  const ctxFillYellow = document.getElementById('ctxFillYellow');
+  const ctxFillColor = document.getElementById('ctxFillColor');
 
   const ctxShowInPreview = document.getElementById('ctxShowInPreview');
   const ctxCopyTable = document.getElementById('ctxCopyTable');
@@ -540,7 +706,7 @@
       tr.appendChild(th);
 
       // Data Cells
-      COLUMNS.forEach(col => {
+      COLUMNS.forEach((col, cIdx) => {
         const addr = col + r;
         const cellData = (sheet.cells && sheet.cells[addr]) || { v: '' };
         const td = document.createElement('td');
@@ -555,7 +721,7 @@
         td.spellcheck = false;
 
         // Apply borders & formatting
-        applyCellStyles(td, cellData);
+        applyCellStyles(td, cellData, cIdx, r, sheet);
 
         // Mouse Drag Selection / Table Move Handlers
         td.addEventListener('mousedown', (e) => {
@@ -658,6 +824,7 @@
     gridTable.appendChild(tbody);
 
     setupGridResize();
+    refreshAllGridBorders(sheet);
     refreshSelectionVisuals();
   }
 
@@ -668,14 +835,15 @@
     }
   });
 
-  function applyCellStyles(td, cellData) {
+  function applyCellStyles(td, cellData, cIdx, r, sheet) {
+    if (!sheet) sheet = getActiveSheet();
     td.innerText = cellData.v || '';
     td.style.fontWeight = cellData.bold ? 'bold' : 'normal';
     td.style.fontStyle = cellData.italic ? 'italic' : 'normal';
     td.style.textDecoration = cellData.underline ? 'underline' : 'none';
     td.style.textAlign = cellData.align || 'left';
     td.style.color = cellData.textColor || '#000000';
-    td.style.backgroundColor = cellData.fillColor || '';
+    td.style.backgroundColor = (cellData.fillColor && cellData.fillColor !== 'transparent' && cellData.fillColor !== 'none') ? cellData.fillColor : '';
     td.style.paddingLeft = (cellData.indent ? (8 + cellData.indent) : 6) + 'px';
     const fontSize = cellData.fontSize || 11;
     td.style.fontSize = fontSize + 'pt';
@@ -685,11 +853,25 @@
       td.style.fontFamily = '';
     }
 
-    // Borders
-    td.style.borderBottom = getBorderCss(cellData.borderBottom);
-    td.style.borderTop = getBorderCss(cellData.borderTop);
-    td.style.borderLeft = getBorderCss(cellData.borderLeft);
-    td.style.borderRight = getBorderCss(cellData.borderRight);
+    // Dynamic Symmetrical Borders & Gridlines
+    if (cIdx !== undefined && r !== undefined) {
+      td.style.borderTop = resolveCellBorder(cIdx, r, 'top', sheet);
+      td.style.borderBottom = resolveCellBorder(cIdx, r, 'bottom', sheet);
+      td.style.borderLeft = resolveCellBorder(cIdx, r, 'left', sheet);
+      td.style.borderRight = resolveCellBorder(cIdx, r, 'right', sheet);
+    } else if (td.dataset && td.dataset.addr) {
+      const parsed = parseAddr(td.dataset.addr);
+      const colI = colIndex(parsed.col);
+      td.style.borderTop = resolveCellBorder(colI, parsed.row, 'top', sheet);
+      td.style.borderBottom = resolveCellBorder(colI, parsed.row, 'bottom', sheet);
+      td.style.borderLeft = resolveCellBorder(colI, parsed.row, 'left', sheet);
+      td.style.borderRight = resolveCellBorder(colI, parsed.row, 'right', sheet);
+    } else {
+      td.style.borderBottom = getBorderCss(cellData.borderBottom);
+      td.style.borderTop = getBorderCss(cellData.borderTop);
+      td.style.borderLeft = getBorderCss(cellData.borderLeft);
+      td.style.borderRight = getBorderCss(cellData.borderRight);
+    }
   }
 
   // --- Excel Drag Selection Range Logic ---
@@ -986,21 +1168,71 @@
     });
   }
 
+  function applyFillColor(color) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    if (!sheet.cells) sheet.cells = {};
+    const cells = getCellsInRange();
+    cells.forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].fillColor = color;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) {
+        td.style.backgroundColor = (color && color !== 'transparent' && color !== 'none') ? color : '';
+      }
+    });
+    if (fillColorBar) {
+      fillColorBar.setAttribute('fill', color || '#ffffff');
+    }
+    refreshAllGridBorders(sheet);
+    saveAppState();
+    updatePreview();
+    showToast(color ? (color.toLowerCase() === '#ffffff' ? 'Aplikovaná biela výplň (mriežka skrytá).' : `Aplikovaná farba výplne (${color}).`) : 'Výplň odstránená (mriežka obnovená).');
+  }
+
   if (ribbonFillColor) {
     ribbonFillColor.addEventListener('input', () => {
-      recordHistory();
-      const color = ribbonFillColor.value;
-      if (fillColorBar) fillColorBar.setAttribute('fill', color);
-      const sheet = getActiveSheet();
-      if (!sheet.cells) sheet.cells = {};
-      getCellsInRange().forEach(item => {
-        if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
-        sheet.cells[item.addr].fillColor = color;
-        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
-        if (td) applyCellStyles(td, sheet.cells[item.addr]);
-      });
-      saveAppState();
-      updatePreview();
+      applyFillColor(ribbonFillColor.value);
+    });
+  }
+
+  if (btnFillWhiteQuick) {
+    btnFillWhiteQuick.addEventListener('click', () => {
+      applyFillColor('#ffffff');
+    });
+  }
+
+  if (btnFillNoneQuick) {
+    btnFillNoneQuick.addEventListener('click', () => {
+      applyFillColor('');
+    });
+  }
+
+  if (ctxFillWhite) {
+    ctxFillWhite.addEventListener('click', () => {
+      applyFillColor('#ffffff');
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+    });
+  }
+
+  if (ctxFillNone) {
+    ctxFillNone.addEventListener('click', () => {
+      applyFillColor('');
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+    });
+  }
+
+  if (ctxFillYellow) {
+    ctxFillYellow.addEventListener('click', () => {
+      applyFillColor('#fff2cc');
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+    });
+  }
+
+  if (ctxFillColor) {
+    ctxFillColor.addEventListener('input', () => {
+      applyFillColor(ctxFillColor.value);
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
     });
   }
 
@@ -1174,6 +1406,7 @@
       }
     }
 
+    refreshAllGridBorders(sheet);
     refreshSelectionVisuals();
     saveAppState();
     updatePreview();
@@ -1333,6 +1566,7 @@
         if (td) applyCellStyles(td, sheet.cells[item.addr]);
       }
     });
+    refreshAllGridBorders(sheet);
     saveAppState();
     updatePreview();
     showToast('Formátovanie a orámovanie bolo odstránené.');
@@ -2605,7 +2839,7 @@
 
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}">\n`;
     svg += `<defs>\n<style>\n`;
-    svg += `  text { font-family: Calibri, Arial, sans-serif; font-size: 13px; dominant-baseline: middle; }\n`;
+    svg += `  text { dominant-baseline: middle; }\n`;
     svg += `  .bold { font-weight: bold; }\n`;
     svg += `  .italic { font-style: italic; }\n`;
     svg += `  .underline { text-decoration: underline; }\n`;
@@ -2624,7 +2858,7 @@
       activeCols.forEach(ac => {
         const addr = `${ac.col}${r}`;
         const cell = (sheet.cells && sheet.cells[addr]) || {};
-        if (cell.fillColor && cell.fillColor !== '#ffffff' && cell.fillColor !== 'transparent') {
+        if (cell.fillColor && cell.fillColor !== 'transparent' && cell.fillColor !== 'none') {
           const cellX = margin + ac.x;
           svg += `<rect x="${cellX}" y="${y}" width="${ac.width}" height="${h}" fill="${cell.fillColor}" />\n`;
         }
@@ -2652,15 +2886,16 @@
         const indentX = cell.indent || 0;
         const textClass = (cell.bold ? 'bold ' : '') + (cell.italic ? 'italic ' : '') + (cell.underline ? 'underline ' : '');
         const textColor = cell.textColor || '#000000';
+        const styleAttr = `style="font-size: ${cellFontPx}px; font-family: ${cellFontFam};"`;
 
         const valLines = String(cell.v || '').split('\n');
         if (valLines.length === 1) {
           if (cell.align === 'center') {
-            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}" ${styleAttr}>${escapeXml(cell.v)}</text>\n`;
           } else if (cell.align === 'right') {
-            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}" ${styleAttr}>${escapeXml(cell.v)}</text>\n`;
           } else {
-            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}" ${styleAttr}>${escapeXml(cell.v)}</text>\n`;
           }
         } else {
           // Multiline cell (kJ / kcal)
@@ -2668,16 +2903,16 @@
           const posX = cell.align === 'right' ? (cellX + cellW - 8) : (cell.align === 'center' ? (cellX + cellW / 2) : (cellX + 8 + indentX));
           const anchorClass = (cell.align === 'right' ? 'right ' : (cell.align === 'center' ? 'center ' : '')) + textClass;
 
-          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">`;
+          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}" ${styleAttr}>`;
           valLines.forEach((line, idx) => {
-            svg += `<tspan x="${posX}" dy="${idx === 0 ? 0 : lineH}">${escapeXml(line)}</tspan>`;
+            svg += `<tspan x="${posX}" dy="${idx === 0 ? 0 : lineH}" ${styleAttr}>${escapeXml(line)}</tspan>`;
           });
           svg += `</text>\n`;
         }
       });
     });
 
-    // 3. Exact Cell Borders (Custom px thickness, style, color)
+    // 3. Exact Symmetrical Cell Borders (Custom px thickness, style, color)
     function renderSvgBorder(x1, y1, x2, y2, b) {
       const norm = normalizeBorder(b);
       if (norm.width <= 0 || norm.style === 'none') return '';
@@ -2698,28 +2933,42 @@
       return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${norm.color}" stroke-width="${norm.width}"${dash} />\n`;
     }
 
-    rowPositions.forEach(rp => {
+    rowPositions.forEach((rp, rIdx) => {
       const r = rp.row;
       const y = rp.y + margin;
       const h = rp.height;
 
-      activeCols.forEach(ac => {
-        const addr = `${ac.col}${r}`;
-        const cell = (sheet.cells && sheet.cells[addr]) || {};
+      activeCols.forEach((ac, cIdxRel) => {
+        const cIdx = colIndex(ac.col);
         const cellX = margin + ac.x;
         const cellW = ac.width;
 
-        if (cell.borderBottom) {
-          svg += renderSvgBorder(cellX, y + h, cellX + cellW, y + h, cell.borderBottom);
+        // Top border of each row in range
+        const bTop = resolveBorderObj(cIdx, r, 'top', sheet);
+        if (bTop) {
+          svg += renderSvgBorder(cellX, y, cellX + cellW, y, bTop);
         }
-        if (cell.borderTop) {
-          svg += renderSvgBorder(cellX, y, cellX + cellW, y, cell.borderTop);
+
+        // Bottom border of last row in range
+        if (rIdx === rowPositions.length - 1) {
+          const bBottom = resolveBorderObj(cIdx, r, 'bottom', sheet);
+          if (bBottom) {
+            svg += renderSvgBorder(cellX, y + h, cellX + cellW, y + h, bBottom);
+          }
         }
-        if (cell.borderLeft) {
-          svg += renderSvgBorder(cellX, y, cellX, y + h, cell.borderLeft);
+
+        // Left border of each col in range
+        const bLeft = resolveBorderObj(cIdx, r, 'left', sheet);
+        if (bLeft) {
+          svg += renderSvgBorder(cellX, y, cellX, y + h, bLeft);
         }
-        if (cell.borderRight) {
-          svg += renderSvgBorder(cellX + cellW, y, cellX + cellW, y + h, cell.borderRight);
+
+        // Right border of last col in range
+        if (cIdxRel === activeCols.length - 1) {
+          const bRight = resolveBorderObj(cIdx, r, 'right', sheet);
+          if (bRight) {
+            svg += renderSvgBorder(cellX + cellW, y, cellX + cellW, y + h, bRight);
+          }
         }
       });
     });

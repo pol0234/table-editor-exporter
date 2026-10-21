@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tabuľkový editor</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/x-icon" href="app-icon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#107c41">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -98,6 +104,12 @@
             </svg>
             <input type="color" id="ribbonFillColor" value="#ffffff">
           </label>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnFillWhiteQuick" title="Biela výplň (skryť sivú mriežku)">
+            <span style="display:inline-block; width:13px; height:13px; background:#ffffff; border:1px solid #777; border-radius:2px;"></span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnFillNoneQuick" title="Bez výplne (obnoviť mriežku)">
+            <span style="display:inline-block; width:13px; height:13px; background:transparent; border:1px dashed #777; border-radius:2px;"></span>
+          </button>
         </div>
       </div>
       <div class="ribbon-group-title">Písmo & farba</div>
@@ -570,6 +582,30 @@
       </select>
       <span style="font-size: 0.72rem; color: #555; margin-left: 6px;">Farba:</span>
       <input type="color" id="ctxBorderColor" value="#000000" style="width: 24px; height: 20px; border: 1px solid #ccc; cursor: pointer; padding: 0; background: none;">
+    </div>
+
+    <div class="ctx-divider"></div>
+
+    <!-- Rýchla výplň buniek -->
+    <div class="ctx-section-title">Výplň buniek</div>
+    <div class="ctx-border-quick-grid">
+      <button class="ctx-border-btn" id="ctxFillWhite" title="Biela výplň (skryje sivú mriežku)">
+        <span class="border-icon-sample" style="background:#ffffff; border:1px solid #888;"></span>
+        <span>Biela</span>
+      </button>
+      <button class="ctx-border-btn" id="ctxFillNone" title="Bez výplne (obnoví mriežku)">
+        <span class="border-icon-sample" style="background:transparent; border:1px dashed #888;"></span>
+        <span>Bez výplne</span>
+      </button>
+      <button class="ctx-border-btn" id="ctxFillYellow" title="Žltá výplň">
+        <span class="border-icon-sample" style="background:#fff2cc; border:1px solid #d6b656;"></span>
+        <span>Žltá</span>
+      </button>
+      <label class="ctx-border-btn" id="ctxFillCustomLabel" title="Vlastná farba výplne" style="cursor:pointer; display:flex; flex-direction:column; align-items:center;">
+        <span class="border-icon-sample" id="ctxFillCustomSample" style="background:#e1dfdd; border:1px solid #888;"></span>
+        <span>Iná...</span>
+        <input type="color" id="ctxFillColor" value="#ffffff" style="display:none;">
+      </label>
     </div>
 
     <div class="ctx-divider"></div>

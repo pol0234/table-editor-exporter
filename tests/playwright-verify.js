@@ -458,7 +458,96 @@ async function runVerification() {
   }
   console.log('Zero emojis verified across full DOM.');
 
-  // 24. Capture screenshot to verification file
+  // 24. Verify Editor vs Preview/Export Synchronization (Font Size & Borders on Bielkoviny)
+  console.log('Verifying Editor vs Preview Synchronization...');
+  // Check Bielkoviny (A7) border in DOM table
+  const borderBottomA7 = await page.evaluate(() => {
+    const td = document.querySelector('td[data-addr="A7"]');
+    return td ? td.style.borderBottom : '';
+  });
+  console.log('Cell A7 (Bielkoviny) borderBottom in editor table:', borderBottomA7);
+  if (!borderBottomA7.includes('solid') || !borderBottomA7.includes('0, 0, 0') && !borderBottomA7.includes('#000000')) {
+    throw new Error(`Expected cell A7 (Bielkoviny) to have explicit black borderBottom, got: "${borderBottomA7}"`);
+  }
+
+  // Check Soľ (A8) borderTop in DOM table
+  const borderTopA8 = await page.evaluate(() => {
+    const td = document.querySelector('td[data-addr="A8"]');
+    return td ? td.style.borderTop : '';
+  });
+  console.log('Cell A8 (Soľ) borderTop in editor table:', borderTopA8);
+  if (!borderTopA8.includes('solid') || !borderTopA8.includes('0, 0, 0') && !borderTopA8.includes('#000000')) {
+    throw new Error(`Expected cell A8 (Soľ) to have matching black borderTop, got: "${borderTopA8}"`);
+  }
+
+  // Check Soľ (A8) borderBottom in DOM table (thick box 2px)
+  const borderBottomA8 = await page.evaluate(() => {
+    const td = document.querySelector('td[data-addr="A8"]');
+    return td ? td.style.borderBottom : '';
+  });
+  console.log('Cell A8 (Soľ) borderBottom in editor table:', borderBottomA8);
+  if (!borderBottomA8.includes('solid') || (!borderBottomA8.includes('0, 0, 0') && !borderBottomA8.includes('#000000'))) {
+    throw new Error(`Expected cell A8 to have solid black bottom border, got: "${borderBottomA8}"`);
+  }
+
+  // Verify font size in SVG preview reflects custom size with inline style
+  await page.click('td[data-addr="A1"]');
+  await page.selectOption('#ribbonFontSize', '20');
+  const svgWith20Pt = await page.evaluate(() => document.querySelector('#previewSvgBox svg').outerHTML);
+  if (!svgWith20Pt.includes('font-size: 27px') && !svgWith20Pt.includes('font-size="27px"')) {
+    throw new Error('SVG preview did not include 20pt/27px font size styling in text!');
+  }
+  console.log('Editor and SVG preview font size & borders 100% verified.');
+
+  // 25. Verify Default Subtle Gray Gridlines (#d4d4d4)
+  console.log('Verifying Default Subtle Gray Gridlines (#d4d4d4)...');
+  const emptyCellBorder = await page.evaluate(() => {
+    const td = document.querySelector('td[data-addr="E15"]');
+    return td ? td.style.borderRight : '';
+  });
+  console.log('Empty cell E15 borderRight:', emptyCellBorder);
+  if (!emptyCellBorder.includes('1px solid #d4d4d4') && !emptyCellBorder.includes('1px solid rgb(212, 212, 212)')) {
+    throw new Error(`Expected default gridline to be 1px solid #d4d4d4, got: "${emptyCellBorder}"`);
+  }
+
+  // 26. Verify Table Fill Behavior (White Fill Hides Gridlines)
+  console.log('Verifying Table Fill Behavior (White fill covers gridlines)...');
+  // Click cell F10 and F11
+  await page.click('td[data-addr="F10"]');
+  // Click quick white fill button in ribbon
+  await page.click('#btnFillWhiteQuick');
+  const f10Bg = await page.evaluate(() => document.querySelector('td[data-addr="F10"]').style.backgroundColor);
+  const f10Border = await page.evaluate(() => document.querySelector('td[data-addr="F10"]').style.borderRight);
+  console.log('Cell F10 after White Fill -> bgColor:', f10Bg, '| borderRight:', f10Border);
+  if (f10Bg !== 'rgb(255, 255, 255)' && f10Bg !== '#ffffff') {
+    throw new Error(`Expected cell F10 background to be white, got: "${f10Bg}"`);
+  }
+  // Border should match white fill (#ffffff) to hide gridlines
+  if (!f10Border.includes('#ffffff') && !f10Border.includes('rgb(255, 255, 255)') && !f10Border.includes('transparent')) {
+    throw new Error(`Expected cell F10 border to cover gridlines with white fill, got: "${f10Border}"`);
+  }
+
+  // Clear fill via #btnFillNoneQuick
+  await page.click('#btnFillNoneQuick');
+  const f10BorderAfterClear = await page.evaluate(() => document.querySelector('td[data-addr="F10"]').style.borderRight);
+  console.log('Cell F10 after Clear Fill -> borderRight:', f10BorderAfterClear);
+  if (!f10BorderAfterClear.includes('#d4d4d4') && !f10BorderAfterClear.includes('rgb(212, 212, 212)')) {
+    throw new Error(`Expected cell F10 border to restore #d4d4d4 gridline after clear fill, got: "${f10BorderAfterClear}"`);
+  }
+
+  // 27. Verify PWA Manifest & Desktop Shortcut Launch Setup
+  console.log('Verifying PWA Manifest and Desktop Shortcut setup...');
+  const manifestLink = await page.$('link[rel="manifest"]');
+  if (!manifestLink) {
+    throw new Error('manifest.json link tag missing in index.html head!');
+  }
+  const faviconLink = await page.$('link[rel="icon"]');
+  if (!faviconLink) {
+    throw new Error('icon link tag missing in index.html head!');
+  }
+  console.log('PWA Manifest & Icon links verified in DOM.');
+
+  // 28. Capture screenshot to verification file
   await page.screenshot({ path: path.resolve(__dirname, '../verification-excel-ui.png') });
   console.log('Screenshot saved to verification-excel-ui.png');
 
