@@ -244,23 +244,30 @@ async function runVerification() {
     throw new Error(`Ctrl+Z did not undo font weight to ${initialWeight}, got ${weightAfterCtrlZ}!`);
   }
 
-  // 15. Test Print View Mode Toggle
-  console.log('Testing Print View Mode Toggle...');
-  await page.click('#btnTogglePrintView');
-  const isPrintActive = await page.evaluate(() => document.getElementById('spreadsheetArea').classList.contains('print-view-active'));
-  if (!isPrintActive) {
-    throw new Error('Spreadsheet area should have class "print-view-active" when Print View is toggled on!');
+  // 15. Verify Print View Button is Completely Removed from DOM
+  console.log('Verifying Print View ("Tlačový náhľad") button is removed...');
+  const printViewBtn = await page.$('#btnTogglePrintView');
+  if (printViewBtn) {
+    throw new Error('Found #btnTogglePrintView in DOM, it should be completely removed!');
   }
-  const hasInExportRange = await page.evaluate(() => document.querySelectorAll('td.in-export-range').length);
-  console.log(`Found ${hasInExportRange} cells marked as in-export-range in print view.`);
-  if (hasInExportRange === 0) {
-    throw new Error('Print view active should mark table cells with in-export-range!');
+  const ctxPrintBtn = await page.$('#ctxTogglePrint');
+  if (ctxPrintBtn) {
+    throw new Error('Found #ctxTogglePrint in DOM, it should be completely removed!');
   }
-  // Toggle off
-  await page.click('#btnTogglePrintView');
-  const isPrintActiveOff = await page.evaluate(() => document.getElementById('spreadsheetArea').classList.contains('print-view-active'));
-  if (isPrintActiveOff) {
-    throw new Error('Spreadsheet area should NOT have class "print-view-active" after toggling off!');
+  console.log('Confirmed Print Preview button and context option are removed.');
+
+  // 15b. Verify Top Border Offset so Row 1 Top Border is Never Cut Off
+  console.log('Verifying Top Border Container Offset...');
+  const tableOffsetTop = await page.evaluate(() => {
+    const table = document.querySelector('.excel-grid-table');
+    const container = document.getElementById('spreadsheetArea');
+    const rectTable = table.getBoundingClientRect();
+    const rectContainer = container.getBoundingClientRect();
+    return rectTable.top - rectContainer.top;
+  });
+  console.log('Table offset from spreadsheet container top:', tableOffsetTop);
+  if (tableOffsetTop < 8) {
+    throw new Error(`Expected spreadsheet table offset top >= 8px to keep top border visible, got ${tableOffsetTop}px`);
   }
 
   // 16. Test Excel HTML Paste with Format Preservation
@@ -349,8 +356,23 @@ async function runVerification() {
     throw new Error('Preview drawer should be closed after clicking #btnCloseDrawer!');
   }
 
-  // 21. Test Context Menu on Cell Right-Click
-  console.log('Testing Excel Authentic Context Menu...');
+  // 21. Test Context Menu: Selection Preservation, Mini-Toolbar & Borders
+  console.log('Testing Context Menu: Multi-Cell Selection Preservation...');
+  // Select A1 to B3 via drag
+  const selBoxA1 = await page.locator('td[data-addr="A1"]').boundingBox();
+  const selBoxB3 = await page.locator('td[data-addr="B3"]').boundingBox();
+  await page.mouse.move(selBoxA1.x + 10, selBoxA1.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(selBoxB3.x + 10, selBoxB3.y + 10);
+  await page.mouse.up();
+
+  const selStatusBefore = await page.textContent('#statusBarSelection');
+  console.log('Status selection before right-click:', selStatusBefore);
+  if (!selStatusBefore.includes('A1:B3')) {
+    throw new Error(`Expected selection A1:B3, got "${selStatusBefore}"`);
+  }
+
+  // Right-click B2 (inside the selection)
   await page.click('td[data-addr="B2"]', { button: 'right' });
   const isMenuVisible = await page.evaluate(() => {
     const el = document.getElementById('excelContextMenu');
@@ -361,7 +383,44 @@ async function runVerification() {
     throw new Error('Context menu #excelContextMenu should be visible on right-click!');
   }
 
-  // Click "Zobraziť túto tabuľku v náhľade" in context menu
+  // Verify multi-cell selection was preserved!
+  const selStatusAfter = await page.textContent('#statusBarSelection');
+  console.log('Status selection AFTER right-click inside:', selStatusAfter);
+  if (!selStatusAfter.includes('A1:B3')) {
+    throw new Error(`Multi-cell selection collapsed on right click! Expected A1:B3, got "${selStatusAfter}"`);
+  }
+  console.log('Active selection preserved on context menu right-click.');
+
+  // Test Mini Toolbar font size, bold, underline, align
+  console.log('Testing Mini Toolbar formatting...');
+  await page.selectOption('#ctxFontSize', '14');
+  await page.click('#ctxUnderline');
+  await page.click('#ctxAlignCenter');
+
+  const cellA1Underline = await page.evaluate(() => document.querySelector('td[data-addr="A1"]').style.textDecoration);
+  const cellA1Align = await page.evaluate(() => document.querySelector('td[data-addr="A1"]').style.textAlign);
+  const cellA1Size = await page.evaluate(() => document.querySelector('td[data-addr="A1"]').style.fontSize);
+  console.log(`Cell A1 styled via Mini Toolbar: textDecoration="${cellA1Underline}", align="${cellA1Align}", size="${cellA1Size}"`);
+  if (!cellA1Underline.includes('underline')) {
+    throw new Error(`Expected cell A1 text-decoration to be underline, got "${cellA1Underline}"`);
+  }
+  if (cellA1Align !== 'center') {
+    throw new Error(`Expected cell A1 text-align to be center, got "${cellA1Align}"`);
+  }
+
+  // Test Quick Borders via Context Menu
+  console.log('Testing Context Menu Quick Borders...');
+  await page.selectOption('#ctxBorderWidth', '2');
+  await page.click('#ctxBorderAll');
+  
+  const cellA1Border = await page.evaluate(() => document.querySelector('td[data-addr="A1"]').style.borderBottom);
+  console.log('Cell A1 borderBottom after #ctxBorderAll:', cellA1Border);
+  if (!cellA1Border.includes('2px')) {
+    throw new Error(`Expected 2px border on cell A1, got "${cellA1Border}"`);
+  }
+
+  // Re-open context menu to test "Zobraziť túto tabuľku v náhľade"
+  await page.click('td[data-addr="A1"]', { button: 'right' });
   await page.click('#ctxShowInPreview');
   isDrawerClosed = await page.evaluate(() => document.getElementById('averyPreviewDrawer').classList.contains('drawer-closed'));
   console.log('Drawer visible after ctxShowInPreview:', !isDrawerClosed);

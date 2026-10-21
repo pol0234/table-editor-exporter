@@ -335,10 +335,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
           <span>Nastaviť oblasť</span>
         </button>
-        <button class="ribbon-btn ribbon-btn-lg" id="btnTogglePrintView" title="Prepnúť zobrazenie pre tlač (Zvýrazní presnú tlačovú oblasť a rozmery)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-          <span>Tlačový náhľad</span>
-        </button>
         <button class="ribbon-btn ribbon-btn-lg active" id="btnTogglePreviewDrawer" title="Zobraziť alebo skryť bočný panel náhľadu (Export)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
           <span>Panel náhľadu</span>
@@ -490,11 +486,95 @@
 
   <!-- Excel Authentické Kontextové Menu (Right-Click) -->
   <div class="excel-context-menu" id="excelContextMenu">
+    
+    <!-- 1. Mini Toolbar pre rýchle formátovanie písma, štýlu a zarovnania -->
+    <div class="ctx-mini-toolbar">
+      <div class="ctx-mini-row">
+        <select id="ctxFontFamily" class="ctx-mini-select" title="Písmo" style="width: 120px;">
+          <option value="Calibri" selected>Calibri</option>
+          <option value="'Segoe UI', sans-serif">Segoe UI</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="'Roboto', sans-serif">Roboto</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="Tahoma, sans-serif">Tahoma</option>
+        </select>
+        <select id="ctxFontSize" class="ctx-mini-select ctx-mini-size" title="Veľkosť písma">
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11" selected>11</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="16">16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+        </select>
+        <button class="ctx-mini-btn" id="ctxFontInc" title="Zväčšiť písmo">A+</button>
+        <button class="ctx-mini-btn" id="ctxFontDec" title="Zmenšiť písmo">A−</button>
+      </div>
+      <div class="ctx-mini-row" style="margin-top: 2px;">
+        <button class="ctx-mini-btn" id="ctxBold" title="Tučné (Ctrl+B)"><strong>B</strong></button>
+        <button class="ctx-mini-btn" id="ctxItalic" title="Kurzíva (Ctrl+I)"><em>I</em></button>
+        <button class="ctx-mini-btn" id="ctxUnderline" title="Podčiarknuté (Ctrl+U)"><span style="text-decoration: underline; font-weight: 600;">U</span></button>
+        <div class="ctx-mini-sep"></div>
+        <button class="ctx-mini-btn" id="ctxAlignLeft" title="Zarovnať vľavo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+        </button>
+        <button class="ctx-mini-btn" id="ctxAlignCenter" title="Zarovnať na stred">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
+        </button>
+        <button class="ctx-mini-btn" id="ctxAlignRight" title="Zarovnať vpravo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ctx-divider"></div>
+
+    <!-- 2. Rýchla akcia: Zobraziť túto tabuľku v náhľade -->
     <div class="ctx-item ctx-item-primary" id="ctxShowInPreview">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
       <span>Zobraziť túto tabuľku v náhľade</span>
     </div>
+
     <div class="ctx-divider"></div>
+
+    <!-- 3. Rýchle orámovanie pre označenú oblasť -->
+    <div class="ctx-section-title">Orámovanie pre výber</div>
+    <div class="ctx-border-quick-grid">
+      <button class="ctx-border-btn" id="ctxBorderAll" title="Všetky orámovania">
+        <span class="border-icon-sample border-all"></span>
+        <span>Všetky</span>
+      </button>
+      <button class="ctx-border-btn" id="ctxBorderOuter" title="Iba vonkajšie orámovanie">
+        <span class="border-icon-sample border-outer"></span>
+        <span>Vonkajšie</span>
+      </button>
+      <button class="ctx-border-btn" id="ctxBorderThickOuter" title="Hrubé vonkajšie orámovanie">
+        <span class="border-icon-sample border-outer" style="border-width: 2.5px;"></span>
+        <span>Hrubé</span>
+      </button>
+      <button class="ctx-border-btn" id="ctxBorderNone" title="Odstrániť orámovanie">
+        <span class="border-icon-sample border-none"></span>
+        <span>Žiadne</span>
+      </button>
+    </div>
+    <div class="ctx-border-settings-row">
+      <span style="font-size: 0.72rem; color: #555;">Hrúbka:</span>
+      <select id="ctxBorderWidth" class="ctx-mini-select" style="width: 55px; height: 22px;">
+        <option value="1" selected>1 px</option>
+        <option value="2">2 px</option>
+        <option value="3">3 px</option>
+        <option value="4">4 px</option>
+      </select>
+      <span style="font-size: 0.72rem; color: #555; margin-left: 6px;">Farba:</span>
+      <input type="color" id="ctxBorderColor" value="#000000" style="width: 24px; height: 20px; border: 1px solid #ccc; cursor: pointer; padding: 0; background: none;">
+    </div>
+
+    <div class="ctx-divider"></div>
+
+    <!-- 4. Kopírovanie & Vkladanie -->
     <div class="ctx-item" id="ctxCopyTable">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
       <span>Kopírovať tabuľku</span>
@@ -505,16 +585,14 @@
       <span>Vložiť z Excelu</span>
       <span class="ctx-shortcut">Ctrl+V</span>
     </div>
-    <div class="ctx-divider"></div>
     <div class="ctx-item" id="ctxSetExportRange">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
       <span>Nastaviť ako oblasť exportu</span>
     </div>
-    <div class="ctx-item" id="ctxTogglePrint">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-      <span>Prepnúť zobrazenie pre tlač</span>
-    </div>
+
     <div class="ctx-divider"></div>
+
+    <!-- 5. Vymazanie obsahu a formátovania -->
     <div class="ctx-item" id="ctxClearContent">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
       <span>Vymazať obsah</span>
@@ -524,12 +602,14 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
       <span>Vymazať formátovanie</span>
     </div>
-    <div class="ctx-divider"></div>
     <div class="ctx-item" id="ctxAutoFit">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
       <span>Automaticky prispôsobiť veľkosť</span>
     </div>
+
     <div class="ctx-divider"></div>
+
+    <!-- 6. Práca s riadkami a stĺpcami -->
     <div class="ctx-item" id="ctxInsertRow">
       <span>Vložiť riadok nad</span>
     </div>

@@ -58,7 +58,7 @@
       {
         id: 's_papaya',
         name: 'Soft-Dried-Papaya',
-        colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
+        colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
           'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
@@ -83,7 +83,7 @@
       {
         id: 's_mango',
         name: 'Dried-Mango',
-        colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
+        colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
           'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
@@ -108,7 +108,7 @@
       {
         id: 's_passion',
         name: 'Soft-Dried-PassionFruit',
-        colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
+        colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
           'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
@@ -133,7 +133,7 @@
       {
         id: 's_mixed',
         name: 'Mixed-Dried-TropicalFruits',
-        colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
+        colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
           'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
@@ -348,7 +348,6 @@
 
   // Export & Files
   const btnSetExportRange = document.getElementById('btnSetExportRange');
-  const btnTogglePrintView = document.getElementById('btnTogglePrintView');
   const btnCopyAvery = document.getElementById('btnCopyAvery');
   const btnExportSvg = document.getElementById('btnExportSvg');
   const btnExportPng = document.getElementById('btnExportPng');
@@ -371,13 +370,30 @@
   const btnBgCheck = document.getElementById('btnBgCheck');
   const btnTogglePrintGuides = document.getElementById('btnTogglePrintGuides');
 
-  // Context Menu Elements
+  // Context Menu Elements (Mini Toolbar & Borders)
   const excelContextMenu = document.getElementById('excelContextMenu');
+  const ctxFontFamily = document.getElementById('ctxFontFamily');
+  const ctxFontSize = document.getElementById('ctxFontSize');
+  const ctxFontInc = document.getElementById('ctxFontInc');
+  const ctxFontDec = document.getElementById('ctxFontDec');
+  const ctxBold = document.getElementById('ctxBold');
+  const ctxItalic = document.getElementById('ctxItalic');
+  const ctxUnderline = document.getElementById('ctxUnderline');
+  const ctxAlignLeft = document.getElementById('ctxAlignLeft');
+  const ctxAlignCenter = document.getElementById('ctxAlignCenter');
+  const ctxAlignRight = document.getElementById('ctxAlignRight');
+
+  const ctxBorderAll = document.getElementById('ctxBorderAll');
+  const ctxBorderOuter = document.getElementById('ctxBorderOuter');
+  const ctxBorderThickOuter = document.getElementById('ctxBorderThickOuter');
+  const ctxBorderNone = document.getElementById('ctxBorderNone');
+  const ctxBorderWidth = document.getElementById('ctxBorderWidth');
+  const ctxBorderColor = document.getElementById('ctxBorderColor');
+
   const ctxShowInPreview = document.getElementById('ctxShowInPreview');
   const ctxCopyTable = document.getElementById('ctxCopyTable');
   const ctxPasteExcel = document.getElementById('ctxPasteExcel');
   const ctxSetExportRange = document.getElementById('ctxSetExportRange');
-  const ctxTogglePrint = document.getElementById('ctxTogglePrint');
   const ctxClearContent = document.getElementById('ctxClearContent');
   const ctxClearFormat = document.getElementById('ctxClearFormat');
   const ctxAutoFit = document.getElementById('ctxAutoFit');
@@ -531,6 +547,23 @@
 
         // Mouse Drag Selection / Table Move Handlers
         td.addEventListener('mousedown', (e) => {
+          if (e.button === 2) {
+            // Right-click: Keep active multi-cell selection if clicking inside it
+            const cur = appState.selectionRange;
+            if (cur) {
+              const sC = Math.min(colIndex(cur.startCol), colIndex(cur.endCol));
+              const eC = Math.max(colIndex(cur.startCol), colIndex(cur.endCol));
+              const sR = Math.min(cur.startRow, cur.endRow);
+              const eR = Math.max(cur.startRow, cur.endRow);
+              const cIdx = colIndex(col);
+              const isInside = (cIdx >= sC && cIdx <= eC && r >= sR && r <= eR);
+              if (isInside) {
+                return; // Keep selection!
+              }
+            }
+            updateSelectionRange(col, r, col, r);
+            return;
+          }
           if (e.button !== 0) return; // Left click only
 
           const rect = td.getBoundingClientRect();
@@ -560,9 +593,21 @@
         // Cell Selection on focus
         td.addEventListener('focus', () => {
           cellEditHistoryRecorded = false;
-          if (!isDraggingSelection) {
-            updateSelectionRange(col, r, col, r);
+          if (isDraggingSelection) return;
+          const cur = appState.selectionRange;
+          if (cur) {
+            const sC = Math.min(colIndex(cur.startCol), colIndex(cur.endCol));
+            const eC = Math.max(colIndex(cur.startCol), colIndex(cur.endCol));
+            const sR = Math.min(cur.startRow, cur.endRow);
+            const eR = Math.max(cur.startRow, cur.endRow);
+            const cIdx = colIndex(col);
+            const isInside = (cIdx >= sC && cIdx <= eC && r >= sR && r <= eR);
+            const isMulti = (sC !== eC || sR !== eR);
+            if (isInside && isMulti) {
+              return; // Keep active multi-cell selection range intact!
+            }
           }
+          updateSelectionRange(col, r, col, r);
         });
 
         // Cell Typing / Editing
@@ -615,6 +660,7 @@
     td.innerText = cellData.v || '';
     td.style.fontWeight = cellData.bold ? 'bold' : 'normal';
     td.style.fontStyle = cellData.italic ? 'italic' : 'normal';
+    td.style.textDecoration = cellData.underline ? 'underline' : 'none';
     td.style.textAlign = cellData.align || 'left';
     td.style.color = cellData.textColor || '#000000';
     td.style.backgroundColor = cellData.fillColor || '';
@@ -686,6 +732,16 @@
     if (ribbonFillColor && cellData.fillColor) {
       ribbonFillColor.value = cellData.fillColor;
     }
+
+    // Context menu mini-toolbar sync
+    if (ctxBold) ctxBold.classList.toggle('active', !!cellData.bold);
+    if (ctxItalic) ctxItalic.classList.toggle('active', !!cellData.italic);
+    if (ctxUnderline) ctxUnderline.classList.toggle('active', !!cellData.underline);
+    if (ctxFontSize) ctxFontSize.value = String(cellData.fontSize || 11);
+    if (ctxFontFamily && cellData.fontFamily) ctxFontFamily.value = cellData.fontFamily;
+    if (ctxAlignLeft) ctxAlignLeft.classList.toggle('active', (cellData.align || 'left') === 'left');
+    if (ctxAlignCenter) ctxAlignCenter.classList.toggle('active', cellData.align === 'center');
+    if (ctxAlignRight) ctxAlignRight.classList.toggle('active', cellData.align === 'right');
 
     refreshSelectionVisuals();
   }
@@ -802,6 +858,27 @@
     updatePreview();
   });
 
+  function toggleUnderline() {
+    recordHistory();
+    const sheet = getActiveSheet();
+    if (!sheet.cells) sheet.cells = {};
+    const cells = getCellsInRange();
+    const anchorData = sheet.cells[appState.selectedCell] || {};
+    const targetUnderline = !anchorData.underline;
+
+    cells.forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].underline = targetUnderline;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+
+    if (ctxUnderline) ctxUnderline.classList.toggle('active', targetUnderline);
+    refreshSelectionVisuals();
+    saveAppState();
+    updatePreview();
+  }
+
   // Font Size & Font Family
   const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48];
 
@@ -817,6 +894,7 @@
       if (td) applyCellStyles(td, sheet.cells[item.addr]);
     });
     if (fontSizeSelect) fontSizeSelect.value = String(size);
+    if (ctxFontSize) ctxFontSize.value = String(size);
     saveAppState();
     updatePreview();
   }
@@ -855,6 +933,7 @@
         const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
         if (td) applyCellStyles(td, sheet.cells[item.addr]);
       });
+      if (ctxFontFamily) ctxFontFamily.value = fam;
       saveAppState();
       updatePreview();
     });
@@ -983,7 +1062,7 @@
     });
   });
 
-  function applyBorderToSelection(type) {
+  function applyBorderToSelection(type, overrideWidth = null, overrideColor = null) {
     recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
@@ -993,12 +1072,12 @@
     const sR = range.startRow;
     const eR = range.endRow;
 
-    const borderWidth = parseInt(borderWidthInput ? borderWidthInput.value : '1', 10) || 1;
+    const borderWidth = overrideWidth !== null ? overrideWidth : (parseInt(borderWidthInput ? borderWidthInput.value : '1', 10) || 1);
     const borderStyle = borderStyleSelect ? borderStyleSelect.value : 'solid';
-    const borderColor = borderColorPicker ? borderColorPicker.value : '#000000';
+    const borderColor = overrideColor !== null ? overrideColor : (borderColorPicker ? borderColorPicker.value : '#000000');
 
     const userBorder = { width: borderWidth, style: borderStyle, color: borderColor };
-    const thickBorder = { width: 3, style: 'solid', color: borderColor };
+    const thickBorder = { width: Math.max(3, borderWidth), style: 'solid', color: borderColor };
     const doubleBorder = { width: 3, style: 'double', color: borderColor };
     const noneBorder = { width: 0, style: 'none', color: 'transparent' };
 
@@ -1234,6 +1313,9 @@
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
       e.preventDefault();
       italicBtn.click();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
+      e.preventDefault();
+      toggleUnderline();
     }
   });
 
@@ -1374,19 +1456,6 @@
     });
   }
 
-  // --- Print View Mode Toggle ---
-  let isPrintViewActive = false;
-  if (btnTogglePrintView) {
-    btnTogglePrintView.addEventListener('click', () => {
-      isPrintViewActive = !isPrintViewActive;
-      btnTogglePrintView.classList.toggle('active', isPrintViewActive);
-      if (spreadsheetArea) {
-        spreadsheetArea.classList.toggle('print-view-active', isPrintViewActive);
-      }
-      refreshSelectionVisuals();
-      showToast(isPrintViewActive ? 'Zobrazenie pre tlač zapnuté (tlačová oblasť je zvýraznená).' : 'Štandardné zobrazenie mriežky.');
-    });
-  }
 
   let showPrintGuides = false;
   if (btnTogglePrintGuides) {
@@ -1609,7 +1678,69 @@
     }
   }
 
-  // --- Paste from Excel (HTML & TSV) with 100% Format Preservation ---
+  // --- Paste from Excel (HTML & TSV) with 100% Format Preservation & Dynamic Proportions ---
+  function parseDimensionPx(val) {
+    if (!val) return 0;
+    const s = String(val).trim();
+    const m = s.match(/^(\d+(?:\.\d+)?)\s*(pt|px|in|cm|mm)?$/i);
+    if (!m) {
+      const num = parseFloat(s);
+      return isNaN(num) ? 0 : Math.round(num);
+    }
+    const num = parseFloat(m[1]);
+    const unit = (m[2] || 'px').toLowerCase();
+    if (unit === 'pt') return Math.round(num * 1.3333);
+    if (unit === 'in') return Math.round(num * 96);
+    if (unit === 'cm') return Math.round(num * 37.8);
+    if (unit === 'mm') return Math.round(num * 3.78);
+    return Math.round(num);
+  }
+
+  function autoAdjustPastedDimensions(sheet, startColIdx, maxC, startRow, maxR) {
+    if (!sheet.colWidths) sheet.colWidths = {};
+    if (!sheet.rowHeights) sheet.rowHeights = {};
+
+    // 1. Calculate ideal column widths based on content so text doesn't awkwardly break
+    for (let c = startColIdx; c <= maxC; c++) {
+      const colLetter = COLUMNS[c];
+      let maxLineChars = 0;
+      let maxPt = 11;
+      for (let r = startRow; r <= maxR; r++) {
+        const cell = sheet.cells[`${colLetter}${r}`];
+        if (cell && cell.v) {
+          const lines = String(cell.v).split('\n');
+          lines.forEach(l => {
+            const clean = l.trim();
+            if (clean.length > maxLineChars) maxLineChars = clean.length;
+          });
+          if (cell.fontSize && cell.fontSize > maxPt) maxPt = cell.fontSize;
+        }
+      }
+      const charWidth = maxPt * 0.72;
+      const neededWidth = Math.max(70, Math.round(maxLineChars * charWidth + 28));
+      const currentW = sheet.colWidths[colLetter] || 0;
+      sheet.colWidths[colLetter] = Math.max(currentW, neededWidth);
+    }
+
+    // 2. Calculate row heights based on font sizes and multiline counts
+    for (let r = startRow; r <= maxR; r++) {
+      let maxLines = 1;
+      let maxPt = 11;
+      for (let c = startColIdx; c <= maxC; c++) {
+        const cell = sheet.cells[`${COLUMNS[c]}${r}`];
+        if (cell && cell.v) {
+          const lines = String(cell.v).split('\n').length;
+          if (lines > maxLines) maxLines = lines;
+          if (cell.fontSize && cell.fontSize > maxPt) maxPt = cell.fontSize;
+        }
+      }
+      const cellPx = Math.round(maxPt * 1.33);
+      const neededH = Math.round(maxLines * (cellPx * 1.25) + 10);
+      const currentH = sheet.rowHeights[r] || 24;
+      sheet.rowHeights[r] = Math.max(currentH, neededH);
+    }
+  }
+
   function parseExcelBorder(bStr) {
     if (!bStr) return null;
     const m = bStr.match(/([\d\.]+)\s*(pt|px)?\s+([a-z]+)\s*(.*)/i);
@@ -1645,7 +1776,7 @@
     colEls.forEach((colEl, idx) => {
       const c = startColIdx + idx;
       if (c < COLUMNS.length) {
-        const rawW = parseInt(colEl.getAttribute('width') || colEl.style.width || '0', 10);
+        const rawW = parseDimensionPx(colEl.getAttribute('width') || colEl.style.width);
         if (rawW > 0) sheet.colWidths[COLUMNS[c]] = rawW;
       }
     });
@@ -1661,7 +1792,7 @@
       if (r > ROWS_COUNT) return;
       if (r > maxR) maxR = r;
 
-      const trH = parseInt(tr.style.height || tr.getAttribute('height') || '0', 10);
+      const trH = parseDimensionPx(tr.style.height || tr.getAttribute('height'));
       if (trH > 0) {
         sheet.rowHeights[r] = trH;
       }
@@ -1674,7 +1805,7 @@
         const colLetter = COLUMNS[c];
         const addr = `${colLetter}${r}`;
 
-        const tdW = parseInt(td.style.width || td.getAttribute('width') || '0', 10);
+        const tdW = parseDimensionPx(td.style.width || td.getAttribute('width'));
         if (tdW > 0 && (!sheet.colWidths[colLetter] || tdW > sheet.colWidths[colLetter])) {
           sheet.colWidths[colLetter] = tdW;
         }
@@ -1683,9 +1814,10 @@
         td.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
         const text = (td.textContent || td.innerText || '').trim();
 
-        // Check bold & italic
+        // Check bold, italic & underline
         const bold = td.style.fontWeight === 'bold' || parseInt(td.style.fontWeight, 10) >= 600 || !!td.querySelector('b, strong');
         const italic = td.style.fontStyle === 'italic' || !!td.querySelector('i, em');
+        const underline = (td.style.textDecoration && td.style.textDecoration.includes('underline')) || !!td.querySelector('u');
         const align = td.style.textAlign || td.getAttribute('align') || (c > startColIdx ? 'right' : 'left');
 
         // Font size
@@ -1721,6 +1853,7 @@
           v: text,
           bold,
           italic,
+          underline,
           fontSize,
           fontFamily,
           textColor,
@@ -1735,6 +1868,9 @@
       });
     });
 
+    // Automatically ensure proportional column widths & row heights
+    autoAdjustPastedDimensions(sheet, startColIdx, maxC, startRow, maxR);
+
     sheet.exportRange = {
       startCol: COLUMNS[startColIdx],
       startRow,
@@ -1747,7 +1883,7 @@
     saveAppState();
     renderGrid();
     updatePreview();
-    showToast(`Tabuľka z Excelu bola úspešne vložená so zachovaním formátovania (${COLUMNS[startColIdx]}${startRow}:${COLUMNS[maxC]}${maxR}).`);
+    showToast(`Tabuľka z Excelu bola úspešne vložená so zachovaním proporcií a formátovania (${COLUMNS[startColIdx]}${startRow}:${COLUMNS[maxC]}${maxR}).`);
   }
 
   function pasteTsvText(text) {
@@ -1787,6 +1923,9 @@
         };
       });
     });
+
+    // Automatically ensure proportional column widths & row heights
+    autoAdjustPastedDimensions(sheet, startColIdx, maxC, startRow, maxR);
 
     sheet.exportRange = {
       startCol: COLUMNS[startColIdx],
@@ -1845,6 +1984,9 @@
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
       e.preventDefault();
       italicBtn.click();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
+      e.preventDefault();
+      toggleUnderline();
     }
   });
 
@@ -2006,9 +2148,23 @@
         updateSelectionRange(col, row, col, row);
       }
 
+      // Synchronize Mini Toolbar values with active/anchor cell
+      const targetCellAddr = `${col}${row}`;
+      const sheet = getActiveSheet();
+      const cellData = (sheet && sheet.cells && sheet.cells[targetCellAddr]) || {};
+
+      if (ctxFontFamily) ctxFontFamily.value = cellData.fontFamily || 'Calibri';
+      if (ctxFontSize) ctxFontSize.value = String(cellData.fontSize || 11);
+      if (ctxBold) ctxBold.classList.toggle('active', !!cellData.bold);
+      if (ctxItalic) ctxItalic.classList.toggle('active', !!cellData.italic);
+      if (ctxUnderline) ctxUnderline.classList.toggle('active', !!cellData.underline);
+      if (ctxAlignLeft) ctxAlignLeft.classList.toggle('active', (cellData.align || 'left') === 'left');
+      if (ctxAlignCenter) ctxAlignCenter.classList.toggle('active', cellData.align === 'center');
+      if (ctxAlignRight) ctxAlignRight.classList.toggle('active', cellData.align === 'right');
+
       // Safe positioning within viewport
-      const menuW = 250;
-      const menuH = 390;
+      const menuW = 270;
+      const menuH = 490;
       let x = e.clientX;
       let y = e.clientY;
       if (x + menuW > window.innerWidth) x = Math.max(10, window.innerWidth - menuW - 12);
@@ -2029,6 +2185,139 @@
       if (e.key === 'Escape') {
         excelContextMenu.style.display = 'none';
       }
+    });
+  }
+
+  // --- Context Menu: Mini Toolbar Listeners ---
+  if (ctxFontFamily) {
+    ctxFontFamily.addEventListener('change', () => {
+      recordHistory();
+      const fam = ctxFontFamily.value;
+      const sheet = getActiveSheet();
+      if (!sheet.cells) sheet.cells = {};
+      getCellsInRange().forEach(item => {
+        if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+        sheet.cells[item.addr].fontFamily = fam;
+        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+        if (td) applyCellStyles(td, sheet.cells[item.addr]);
+      });
+      if (fontSelect) fontSelect.value = fam;
+      saveAppState();
+      updatePreview();
+    });
+  }
+
+  if (ctxFontSize) {
+    ctxFontSize.addEventListener('change', () => {
+      const size = parseInt(ctxFontSize.value, 10) || 11;
+      applyFontSize(size);
+    });
+  }
+
+  if (ctxFontInc) {
+    ctxFontInc.addEventListener('click', () => {
+      const cur = parseInt(ctxFontSize ? ctxFontSize.value : (fontSizeSelect ? fontSizeSelect.value : '11'), 10) || 11;
+      const next = FONT_SIZES.find(s => s > cur) || (cur + 2);
+      applyFontSize(next);
+      if (ctxFontSize) ctxFontSize.value = String(next);
+    });
+  }
+
+  if (ctxFontDec) {
+    ctxFontDec.addEventListener('click', () => {
+      const cur = parseInt(ctxFontSize ? ctxFontSize.value : (fontSizeSelect ? fontSizeSelect.value : '11'), 10) || 11;
+      const prev = [...FONT_SIZES].reverse().find(s => s < cur) || Math.max(6, cur - 2);
+      applyFontSize(prev);
+      if (ctxFontSize) ctxFontSize.value = String(prev);
+    });
+  }
+
+  if (ctxBold) {
+    ctxBold.addEventListener('click', () => {
+      boldBtn.click();
+      const sheet = getActiveSheet();
+      const cellData = (sheet && sheet.cells && sheet.cells[appState.selectedCell]) || {};
+      ctxBold.classList.toggle('active', !!cellData.bold);
+    });
+  }
+
+  if (ctxItalic) {
+    ctxItalic.addEventListener('click', () => {
+      italicBtn.click();
+      const sheet = getActiveSheet();
+      const cellData = (sheet && sheet.cells && sheet.cells[appState.selectedCell]) || {};
+      ctxItalic.classList.toggle('active', !!cellData.italic);
+    });
+  }
+
+  if (ctxUnderline) {
+    ctxUnderline.addEventListener('click', () => {
+      toggleUnderline();
+    });
+  }
+
+  if (ctxAlignLeft) {
+    ctxAlignLeft.addEventListener('click', () => {
+      applyRangeProp('align', 'left');
+      ctxAlignLeft.classList.add('active');
+      if (ctxAlignCenter) ctxAlignCenter.classList.remove('active');
+      if (ctxAlignRight) ctxAlignRight.classList.remove('active');
+    });
+  }
+
+  if (ctxAlignCenter) {
+    ctxAlignCenter.addEventListener('click', () => {
+      applyRangeProp('align', 'center');
+      ctxAlignCenter.classList.add('active');
+      if (ctxAlignLeft) ctxAlignLeft.classList.remove('active');
+      if (ctxAlignRight) ctxAlignRight.classList.remove('active');
+    });
+  }
+
+  if (ctxAlignRight) {
+    ctxAlignRight.addEventListener('click', () => {
+      applyRangeProp('align', 'right');
+      ctxAlignRight.classList.add('active');
+      if (ctxAlignLeft) ctxAlignLeft.classList.remove('active');
+      if (ctxAlignCenter) ctxAlignCenter.classList.remove('active');
+    });
+  }
+
+  // --- Context Menu: Quick Borders Listeners ---
+  function getCtxBorderSettings() {
+    const w = ctxBorderWidth ? (parseInt(ctxBorderWidth.value, 10) || 1) : 1;
+    const c = ctxBorderColor ? ctxBorderColor.value : '#000000';
+    return { width: w, color: c };
+  }
+
+  if (ctxBorderAll) {
+    ctxBorderAll.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      const { width, color } = getCtxBorderSettings();
+      applyBorderToSelection('all', width, color);
+    });
+  }
+
+  if (ctxBorderOuter) {
+    ctxBorderOuter.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      const { width, color } = getCtxBorderSettings();
+      applyBorderToSelection('outer', width, color);
+    });
+  }
+
+  if (ctxBorderThickOuter) {
+    ctxBorderThickOuter.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      const { width, color } = getCtxBorderSettings();
+      applyBorderToSelection('thick-outer', Math.max(3, width), color);
+    });
+  }
+
+  if (ctxBorderNone) {
+    ctxBorderNone.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      applyBorderToSelection('none');
     });
   }
 
@@ -2092,12 +2381,7 @@
     });
   }
 
-  if (ctxTogglePrint) {
-    ctxTogglePrint.addEventListener('click', () => {
-      if (excelContextMenu) excelContextMenu.style.display = 'none';
-      btnTogglePrintView.click();
-    });
-  }
+
 
   if (ctxClearContent) {
     ctxClearContent.addEventListener('click', () => {
@@ -2214,6 +2498,7 @@
     svg += `  text { font-family: Calibri, Arial, sans-serif; font-size: 13px; dominant-baseline: middle; }\n`;
     svg += `  .bold { font-weight: bold; }\n`;
     svg += `  .italic { font-style: italic; }\n`;
+    svg += `  .underline { text-decoration: underline; }\n`;
     svg += `  .center { text-anchor: middle; }\n`;
     svg += `  .right { text-anchor: end; }\n`;
     svg += `</style>\n</defs>\n`;
@@ -2255,7 +2540,7 @@
 
         const textY = y + h / 2;
         const indentX = cell.indent || 0;
-        const textClass = (cell.bold ? 'bold ' : '') + (cell.italic ? 'italic ' : '');
+        const textClass = (cell.bold ? 'bold ' : '') + (cell.italic ? 'italic ' : '') + (cell.underline ? 'underline ' : '');
         const textColor = cell.textColor || '#000000';
 
         const valLines = String(cell.v || '').split('\n');

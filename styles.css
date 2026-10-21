@@ -598,8 +598,9 @@ body {
 .spreadsheet-area {
   flex: 1;
   overflow: auto;
-  background: white;
+  background: #f4f5f7;
   position: relative;
+  padding: 10px 14px 28px 14px; /* Offset so top borders, cells and shadow are never cut off by navbar/formula bar */
 }
 
 .excel-grid-table {
@@ -608,12 +609,15 @@ body {
   font-family: Calibri, 'Segoe UI', Arial, sans-serif;
   font-size: 11pt;
   background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* Headers */
 .grid-corner-cell {
   background: var(--bg-header-cell);
   border: 1px solid var(--border-medium);
+  border-bottom: none;
+  border-right: none;
   width: 42px;
   height: 24px;
   position: sticky;
@@ -625,6 +629,7 @@ body {
 .grid-header-col {
   background: var(--bg-header-cell);
   border: 1px solid var(--border-medium);
+  border-bottom: none;
   height: 24px;
   text-align: center;
   font-size: 0.78rem;
@@ -634,6 +639,7 @@ body {
   top: 0;
   z-index: 10;
   user-select: none;
+  box-shadow: 0 1px 0 var(--border-medium);
 }
 
 .col-resize-handle {
@@ -790,26 +796,7 @@ body {
   transition: none;
 }
 
-/* Print View Mode */
-.spreadsheet-area.print-view-active {
-  background: #444444 !important;
-  padding: 24px;
-}
 
-.spreadsheet-area.print-view-active .excel-grid-table {
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  background: white;
-}
-
-.spreadsheet-area.print-view-active .grid-cell:not(.in-export-range) {
-  opacity: 0.22;
-  background-color: #fafafa !important;
-}
-
-.spreadsheet-area.print-view-active .grid-cell.in-export-range {
-  position: relative;
-  z-index: 2;
-}
 
 .print-dim-badge {
   display: inline-flex;
@@ -1080,10 +1067,117 @@ body {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
   border-radius: 4px;
   padding: 4px 0;
-  min-width: 230px;
+  min-width: 250px;
   user-select: none;
   font-size: 0.81rem;
   color: #201f1e;
+}
+
+/* Context Menu Mini Toolbar (Excel-style quick format toolbar) */
+.ctx-mini-toolbar {
+  padding: 6px 10px 4px 10px;
+  background: #fbfbfb;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ctx-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ctx-mini-select {
+  height: 24px;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.76rem;
+  background: white;
+  color: var(--text-main);
+  outline: none;
+}
+
+.ctx-mini-size {
+  width: 44px;
+}
+
+.ctx-mini-btn {
+  height: 24px;
+  min-width: 24px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--text-main);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.ctx-mini-btn:hover {
+  background: #edebe9;
+  border-color: var(--border-medium);
+}
+
+.ctx-mini-btn:active, .ctx-mini-btn.active {
+  background: #e1dfdd;
+  border-color: var(--excel-green);
+}
+
+.ctx-mini-sep {
+  width: 1px;
+  height: 16px;
+  background: #e1dfdd;
+  margin: 0 3px;
+}
+
+.ctx-section-title {
+  padding: 4px 12px 2px 12px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.ctx-border-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 3px 10px;
+}
+
+.ctx-border-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px;
+  background: #fbfbfb;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.68rem;
+  color: var(--text-main);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.ctx-border-btn:hover {
+  background: #f0fdf4;
+  border-color: var(--excel-green);
+}
+
+.ctx-border-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 6px 12px;
 }
 
 .ctx-item {
