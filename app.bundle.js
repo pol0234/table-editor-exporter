@@ -194,14 +194,6 @@
     const thickBox = { width: 2, style: 'solid', color: '#000000' };
     const thinInner = { width: 1, style: 'solid', color: '#000000' };
 
-    function withWhite(cellsObj) {
-      const res = {};
-      for (const k in cellsObj) {
-        res[k] = Object.assign({ fillColor: '#ffffff' }, cellsObj[k]);
-      }
-      return res;
-    }
-
     const sheets = [
       {
         id: 's_papaya',
@@ -213,18 +205,18 @@
           'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
           'B2': { v: '1372kJ /\n328kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B3': { v: '0,12g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B4': { v: '0,08g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B5': { v: '80,9g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B6': { v: '70,4g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B7': { v: '1,54g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B8': { v: '0,23g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderTop: thickBox, borderLeft: thickBox },
+          'B3': { v: '0,12g', bold: false, align: 'right', borderTop: thickBox, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B4': { v: '0,08g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderLeft: thickBox },
+          'B5': { v: '80,9g', bold: false, align: 'right', borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B6': { v: '70,4g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderLeft: thickBox },
+          'B7': { v: '1,54g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderLeft: thickBox },
+          'B8': { v: '0,23g', bold: false, align: 'right', borderBottom: thickBox, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       },
@@ -238,18 +230,18 @@
           'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
           'B2': { v: '1420kJ /\n339kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B3': { v: '0,50g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B4': { v: '0,10g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B5': { v: '82,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B6': { v: '65,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B7': { v: '1,80g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B8': { v: '0,05g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderTop: thickBox, borderLeft: thickBox },
+          'B3': { v: '0,50g', bold: false, align: 'right', borderTop: thickBox, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B4': { v: '0,10g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderLeft: thickBox },
+          'B5': { v: '82,0g', bold: false, align: 'right', borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B6': { v: '65,0g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderLeft: thickBox },
+          'B7': { v: '1,80g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderLeft: thickBox },
+          'B8': { v: '0,05g', bold: false, align: 'right', borderBottom: thickBox, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       },
@@ -263,18 +255,18 @@
           'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
           'B2': { v: '1390kJ /\n332kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B3': { v: '0,20g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B4': { v: '0,05g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B5': { v: '78,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B6': { v: '68,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B7': { v: '2,10g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B8': { v: '0,15g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderTop: thickBox, borderLeft: thickBox },
+          'B3': { v: '0,20g', bold: false, align: 'right', borderTop: thickBox, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B4': { v: '0,05g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderLeft: thickBox },
+          'B5': { v: '78,0g', bold: false, align: 'right', borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B6': { v: '68,0g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderLeft: thickBox },
+          'B7': { v: '2,10g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderLeft: thickBox },
+          'B8': { v: '0,15g', bold: false, align: 'right', borderBottom: thickBox, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       },
@@ -288,26 +280,23 @@
           'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
           'B2': { v: '1410kJ /\n337kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B3': { v: '0,35g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B4': { v: '0,07g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B5': { v: '81,5g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B6': { v: '69,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B7': { v: '1,65g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
-          'B8': { v: '0,18g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderTop: thickBox, borderLeft: thickBox },
+          'B3': { v: '0,35g', bold: false, align: 'right', borderTop: thickBox, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B4': { v: '0,07g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderLeft: thickBox },
+          'B5': { v: '81,5g', bold: false, align: 'right', borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderLeft: thickBox },
+          'B6': { v: '69,0g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderLeft: thickBox },
+          'B7': { v: '1,65g', bold: false, align: 'right', borderBottom: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderLeft: thickBox },
+          'B8': { v: '0,18g', bold: false, align: 'right', borderBottom: thickBox, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       }
     ];
 
-    sheets.forEach(sh => {
-      if (sh.cells) sh.cells = withWhite(sh.cells);
-    });
     return sheets;
   }
 
@@ -335,10 +324,11 @@
           if (!sh.colWidths.A || sh.colWidths.A < 260) {
             sh.colWidths.A = 270;
           }
+          // Remove legacy forced white fill so authentic gridlines show
           if (sh.cells) {
             for (const addr in sh.cells) {
-              if (sh.cells[addr].fillColor === undefined) {
-                sh.cells[addr].fillColor = '#ffffff';
+              if (sh.cells[addr].fillColor === '#ffffff' && !sh.cells[addr].userFillExplicit) {
+                delete sh.cells[addr].fillColor;
               }
             }
           }
@@ -592,6 +582,7 @@
       const isActive = sheet.id === appState.activeSheetId;
       const tab = document.createElement('div');
       tab.className = `sheet-tab ${isActive ? 'active' : ''}`;
+      tab.dataset.id = sheet.id;
       tab.innerHTML = `
         <span class="sheet-tab-title" title="${sheet.name}">${sheet.name}</span>
         <span class="sheet-tab-close" title="Zmazať hárok">&times;</span>
@@ -1393,6 +1384,15 @@
         } else if (type === 'thick-bottom') {
           if (r === eR) cell.borderBottom = Object.assign({}, thickBorder);
         } else if (type === 'double-bottom') {
+          if (r === eR) cell.borderBottom = Object.assign({}, doubleBorder);
+        } else if (type === 'top-bottom') {
+          if (r === sR) cell.borderTop = Object.assign({}, userBorder);
+          if (r === eR) cell.borderBottom = Object.assign({}, userBorder);
+        } else if (type === 'top-thick-bottom') {
+          if (r === sR) cell.borderTop = Object.assign({}, userBorder);
+          if (r === eR) cell.borderBottom = Object.assign({}, thickBorder);
+        } else if (type === 'top-double-bottom') {
+          if (r === sR) cell.borderTop = Object.assign({}, userBorder);
           if (r === eR) cell.borderBottom = Object.assign({}, doubleBorder);
         } else if (type === 'none') {
           cell.borderTop = Object.assign({}, noneBorder);
@@ -2942,31 +2942,56 @@
         const cIdx = colIndex(ac.col);
         const cellX = margin + ac.x;
         const cellW = ac.width;
+        const addr = `${ac.col}${r}`;
 
         // Top border of each row in range
         const bTop = resolveBorderObj(cIdx, r, 'top', sheet);
-        if (bTop) {
+        const hasTopBorder = bTop && bTop.width > 0 && bTop.style !== 'none';
+        if (hasTopBorder) {
           svg += renderSvgBorder(cellX, y, cellX + cellW, y, bTop);
+        } else if (rIdx > 0) {
+          // Internal horizontal row divider without explicit border:
+          // Check if user set a background fill (e.g. White) that covers gridlines
+          const cell = (sheet.cells && sheet.cells[addr]) || {};
+          const prevRowAddr = `${ac.col}${rowPositions[rIdx - 1].row}`;
+          const prevCell = (sheet.cells && sheet.cells[prevRowAddr]) || {};
+          const cellFill = (cell.fillColor && cell.fillColor !== 'transparent' && cell.fillColor !== 'none') ? cell.fillColor : null;
+          const prevFill = (prevCell.fillColor && prevCell.fillColor !== 'transparent' && prevCell.fillColor !== 'none') ? prevCell.fillColor : null;
+          if (!cellFill && !prevFill) {
+            svg += `<line x1="${cellX}" y1="${y}" x2="${cellX + cellW}" y2="${y}" stroke="#d4d4d4" stroke-width="1" />\n`;
+          }
         }
 
         // Bottom border of last row in range
         if (rIdx === rowPositions.length - 1) {
           const bBottom = resolveBorderObj(cIdx, r, 'bottom', sheet);
-          if (bBottom) {
+          if (bBottom && bBottom.width > 0 && bBottom.style !== 'none') {
             svg += renderSvgBorder(cellX, y + h, cellX + cellW, y + h, bBottom);
           }
         }
 
         // Left border of each col in range
         const bLeft = resolveBorderObj(cIdx, r, 'left', sheet);
-        if (bLeft) {
+        const hasLeftBorder = bLeft && bLeft.width > 0 && bLeft.style !== 'none';
+        if (hasLeftBorder) {
           svg += renderSvgBorder(cellX, y, cellX, y + h, bLeft);
+        } else if (cIdxRel > 0) {
+          // Internal vertical column divider without explicit border:
+          const cell = (sheet.cells && sheet.cells[addr]) || {};
+          const prevCol = activeCols[cIdxRel - 1].col;
+          const prevColAddr = `${prevCol}${r}`;
+          const prevColCell = (sheet.cells && sheet.cells[prevColAddr]) || {};
+          const cellFill = (cell.fillColor && cell.fillColor !== 'transparent' && cell.fillColor !== 'none') ? cell.fillColor : null;
+          const prevFill = (prevColCell.fillColor && prevColCell.fillColor !== 'transparent' && prevColCell.fillColor !== 'none') ? prevColCell.fillColor : null;
+          if (!cellFill && !prevFill) {
+            svg += `<line x1="${cellX}" y1="${y}" x2="${cellX}" y2="${y + h}" stroke="#d4d4d4" stroke-width="1" />\n`;
+          }
         }
 
         // Right border of last col in range
         if (cIdxRel === activeCols.length - 1) {
           const bRight = resolveBorderObj(cIdx, r, 'right', sheet);
-          if (bRight) {
+          if (bRight && bRight.width > 0 && bRight.style !== 'none') {
             svg += renderSvgBorder(cellX + cellW, y, cellX + cellW, y + h, bRight);
           }
         }

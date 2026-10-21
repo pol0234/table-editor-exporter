@@ -547,7 +547,66 @@ async function runVerification() {
   }
   console.log('PWA Manifest & Icon links verified in DOM.');
 
-  // 28. Capture screenshot to verification file
+  // 28. Verify Authentic Excel Border Menu Options (Matching User Screenshot Image 1)
+  console.log('Verifying authentic Excel border options in #borderMenu (Image 1)...');
+  const expectedBorders = [
+    'bottom', 'top', 'left', 'right',
+    'none', 'all', 'outer', 'thick-outer',
+    'double-bottom', 'thick-bottom', 'top-bottom', 'top-thick-bottom', 'top-double-bottom',
+    'inner', 'inner-horizontal', 'inner-vertical'
+  ];
+  for (const bType of expectedBorders) {
+    const item = await page.$(`#borderMenu .border-menu-item[data-border="${bType}"]`);
+    if (!item) {
+      throw new Error(`Missing expected border menu option in #borderMenu: data-border="${bType}"`);
+    }
+  }
+  console.log('All 16 authentic Excel border options verified in dropdown menu.');
+
+  // Test applying combination border: top-bottom, top-thick-bottom, top-double-bottom
+  console.log('Testing combination border application (top-thick-bottom)...');
+  await page.click('td[data-addr="D5"]');
+  await page.click('#btnBorderDropdown');
+  await page.click('#borderMenu .border-menu-item[data-border="top-thick-bottom"]');
+  const d5Top = await page.evaluate(() => document.querySelector('td[data-addr="D5"]').style.borderTop);
+  const d5Bottom = await page.evaluate(() => document.querySelector('td[data-addr="D5"]').style.borderBottom);
+  console.log('D5 top-thick-bottom -> borderTop:', d5Top, '| borderBottom:', d5Bottom);
+  if (!d5Bottom.includes('3px solid')) {
+    throw new Error(`Expected cell D5 borderBottom to be 3px solid, got: "${d5Bottom}"`);
+  }
+
+  // 29. Verify Subtle Gray Lines (#d4d4d4) in SVG Export and Preview (Matching User Screenshot Image 2)
+  console.log('Verifying subtle gray lines (#d4d4d4) in SVG preview/export (Image 2)...');
+  const mangoTab = await page.$('.sheet-tab[data-id="s_mango"]');
+  if (mangoTab) await mangoTab.click();
+
+  const svgContent = await page.evaluate(() => document.querySelector('#previewSvgBox svg').outerHTML);
+  const grayLineMatches = (svgContent.match(/stroke="#d4d4d4"/g) || []).length;
+  console.log(`Found ${grayLineMatches} subtle gray divider lines (stroke="#d4d4d4") in SVG preview.`);
+  if (grayLineMatches === 0) {
+    console.log('FULL SVG:', svgContent);
+    throw new Error('SVG preview does NOT contain subtle gray gridlines (#d4d4d4)!');
+  }
+
+  // 30. Verify Standalone PWA Launcher Infrastructure Exists
+  console.log('Verifying standalone PWA launcher scripts...');
+  const fs = await import('fs');
+  const requiredScripts = [
+    'server.js',
+    'launch.js',
+    'Spustiť-Aplikáciu.vbs',
+    'Spustiť-Aplikáciu.bat',
+    'Vytvoriť-Odkaz-Na-Plochu.ps1'
+  ];
+  for (const scriptName of requiredScripts) {
+    const scriptPath = path.resolve(__dirname, '..', scriptName);
+    if (!fs.existsSync(scriptPath)) {
+      throw new Error(`Missing launcher file: ${scriptName}`);
+    }
+  }
+  console.log('All 5 standalone PWA launcher files verified.');
+
+  // 31. Capture screenshot to verification file
   await page.screenshot({ path: path.resolve(__dirname, '../verification-excel-ui.png') });
   console.log('Screenshot saved to verification-excel-ui.png');
 
