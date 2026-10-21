@@ -1043,15 +1043,44 @@
     updatePreview();
   }
 
-  // --- Borders Dropdown Menu Applied to Selected Range ---
-  borderDropdownBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    borderMenu.classList.toggle('open');
-  });
+  // --- Borders Dropdown Menu Applied to Selected Range (Floating Fixed) ---
+  if (borderMenu && borderMenu.parentElement !== document.body) {
+    document.body.appendChild(borderMenu);
+  }
 
-  document.addEventListener('click', () => {
-    borderMenu.classList.remove('open');
-  });
+  function positionBorderMenu() {
+    if (!borderMenu || !borderDropdownBtn) return;
+    const rect = borderDropdownBtn.getBoundingClientRect();
+    borderMenu.style.position = 'fixed';
+    borderMenu.style.top = `${rect.bottom + 4}px`;
+    borderMenu.style.left = `${Math.min(window.innerWidth - 260, Math.max(10, rect.left))}px`;
+    borderMenu.style.zIndex = '999999';
+  }
+
+  if (borderDropdownBtn && borderMenu) {
+    borderDropdownBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = borderMenu.classList.contains('open');
+      if (!isOpen) {
+        positionBorderMenu();
+        borderMenu.classList.add('open');
+      } else {
+        borderMenu.classList.remove('open');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!borderMenu.contains(e.target) && e.target !== borderDropdownBtn && !borderDropdownBtn.contains(e.target)) {
+        borderMenu.classList.remove('open');
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (borderMenu.classList.contains('open')) {
+        positionBorderMenu();
+      }
+    });
+  }
 
   document.querySelectorAll('.border-menu-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -2437,15 +2466,80 @@
     });
   }
 
-  // --- Horizontal mouse wheel scroll for ribbon toolbar ---
+  // --- Horizontal mouse wheel, touchpad & button scroll for ribbon toolbar ---
   const ribbonToolbar = document.querySelector('.excel-ribbon-toolbar');
+  const btnRibbonScrollLeft = document.getElementById('btnRibbonScrollLeft');
+  const btnRibbonScrollRight = document.getElementById('btnRibbonScrollRight');
+
+  function updateRibbonScrollButtons() {
+    if (!ribbonToolbar) return;
+    const canScrollLeft = ribbonToolbar.scrollLeft > 6;
+    const canScrollRight = ribbonToolbar.scrollLeft < (ribbonToolbar.scrollWidth - ribbonToolbar.clientWidth - 6);
+    if (btnRibbonScrollLeft) btnRibbonScrollLeft.classList.toggle('visible', canScrollLeft);
+    if (btnRibbonScrollRight) btnRibbonScrollRight.classList.toggle('visible', canScrollRight);
+  }
+
   if (ribbonToolbar) {
+    ribbonToolbar.addEventListener('scroll', () => {
+      updateRibbonScrollButtons();
+      if (borderMenu && borderMenu.classList.contains('open')) {
+        positionBorderMenu();
+      }
+    }, { passive: true });
+
     ribbonToolbar.addEventListener('wheel', (e) => {
-      if (e.deltaY !== 0) {
-        e.preventDefault();
-        ribbonToolbar.scrollLeft += e.deltaY;
+      if (ribbonToolbar.scrollWidth > ribbonToolbar.clientWidth) {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
+          e.preventDefault();
+          ribbonToolbar.scrollLeft += e.deltaY;
+        } else if (e.deltaX !== 0) {
+          ribbonToolbar.scrollLeft += e.deltaX;
+        }
       }
     }, { passive: false });
+
+    // Drag-to-scroll support for touchpads / mouse drag on ribbon background
+    let isRibbonDragging = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    ribbonToolbar.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button, input, select, .border-menu, .sheet-tab')) return;
+      isRibbonDragging = true;
+      startX = e.pageX - ribbonToolbar.offsetLeft;
+      startScrollLeft = ribbonToolbar.scrollLeft;
+      ribbonToolbar.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isRibbonDragging) return;
+      e.preventDefault();
+      const x = e.pageX - ribbonToolbar.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      ribbonToolbar.scrollLeft = startScrollLeft - walk;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isRibbonDragging) {
+        isRibbonDragging = false;
+        ribbonToolbar.style.cursor = '';
+      }
+    });
+
+    window.addEventListener('resize', updateRibbonScrollButtons);
+    setTimeout(updateRibbonScrollButtons, 150);
+  }
+
+  if (btnRibbonScrollLeft) {
+    btnRibbonScrollLeft.addEventListener('click', () => {
+      if (ribbonToolbar) ribbonToolbar.scrollBy({ left: -220, behavior: 'smooth' });
+    });
+  }
+
+  if (btnRibbonScrollRight) {
+    btnRibbonScrollRight.addEventListener('click', () => {
+      if (ribbonToolbar) ribbonToolbar.scrollBy({ left: 220, behavior: 'smooth' });
+    });
   }
 
   // --- SVG Live Preview Generator With Custom Pixel Borders & Real Dimensions ---
