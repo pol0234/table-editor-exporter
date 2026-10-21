@@ -5,13 +5,113 @@
   const STORAGE_KEY = 'oco_excel_nutrition_sheets_v3';
   const DRAWER_WIDTH_KEY = 'oco_avery_drawer_width_v3';
 
-  // --- Grid Constants ---
-  const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-  const ROWS_COUNT = 24;
-
-  function colIndex(col) {
-    return COLUMNS.indexOf(col);
+  // --- Dynamic Grid Alphabetical Columns & Rows ---
+  function getColName(n) {
+    let name = '';
+    let idx = Number(n);
+    while (idx >= 0) {
+      name = String.fromCharCode((idx % 26) + 65) + name;
+      idx = Math.floor(idx / 26) - 1;
+    }
+    return name;
   }
+
+  function colIndex(name) {
+    if (!name) return 0;
+    let num = 0;
+    const str = String(name).toUpperCase().trim();
+    for (let i = 0; i < str.length; i++) {
+      num = num * 26 + (str.charCodeAt(i) - 64);
+    }
+    return num - 1;
+  }
+
+  function getSheetCols(sheet) {
+    if (!sheet && typeof getActiveSheet === 'function') sheet = getActiveSheet();
+    let count = (sheet && sheet.colCount) ? sheet.colCount : 0;
+    if (!count) {
+      let maxIdx = 5; // Default 6 columns: A, B, C, D, E, F
+      if (sheet && sheet.colWidths) {
+        for (const c in sheet.colWidths) {
+          const idx = colIndex(c);
+          if (idx > maxIdx) maxIdx = idx;
+        }
+      }
+      if (sheet && sheet.cells) {
+        for (const addr in sheet.cells) {
+          const { col } = parseAddr(addr);
+          const idx = colIndex(col);
+          if (idx > maxIdx) maxIdx = idx;
+        }
+      }
+      if (sheet && sheet.exportRange && sheet.exportRange.endCol) {
+        const idx = colIndex(sheet.exportRange.endCol);
+        if (idx > maxIdx) maxIdx = idx;
+      }
+      count = maxIdx + 1;
+      if (sheet) sheet.colCount = count;
+    }
+    const cols = [];
+    for (let i = 0; i < count; i++) {
+      cols.push(getColName(i));
+    }
+    return cols;
+  }
+
+  function getSheetRowCount(sheet) {
+    if (!sheet && typeof getActiveSheet === 'function') sheet = getActiveSheet();
+    let count = (sheet && sheet.rowCount) ? sheet.rowCount : 0;
+    if (!count) {
+      let maxR = 24;
+      if (sheet && sheet.cells) {
+        for (const addr in sheet.cells) {
+          const { row } = parseAddr(addr);
+          if (row > maxR) maxR = row;
+        }
+      }
+      count = maxR;
+      if (sheet) sheet.rowCount = count;
+    }
+    return count;
+  }
+
+  const COLUMNS = new Proxy([], {
+    get(target, prop) {
+      if (prop === 'length') {
+        return getSheetCols().length;
+      }
+      if (prop === 'indexOf') {
+        return (val) => colIndex(val);
+      }
+      if (prop === 'forEach') {
+        return (callback) => {
+          getSheetCols().forEach(callback);
+        };
+      }
+      if (prop === 'map') {
+        return (callback) => {
+          return getSheetCols().map(callback);
+        };
+      }
+      if (prop === 'includes') {
+        return (val) => {
+          return getSheetCols().includes(val);
+        };
+      }
+      if (prop === Symbol.iterator) {
+        return function* () {
+          yield* getSheetCols();
+        };
+      }
+      const idx = Number(prop);
+      if (!isNaN(idx) && idx >= 0) {
+        return getColName(idx);
+      }
+      return target[prop];
+    }
+  });
+
+  const ROWS_COUNT = 24;
 
   function parseAddr(addr) {
     const col = addr.replace(/[0-9]/g, '');
@@ -638,13 +738,16 @@
     const sheet = getActiveSheet();
     gridTable.innerHTML = '';
 
+    const currentCols = getSheetCols(sheet);
+    const totalRows = getSheetRowCount(sheet);
+
     // Colgroup for column widths
     const colgroup = document.createElement('colgroup');
     const thCol = document.createElement('col');
     thCol.style.width = '42px'; // Row numbers col
     colgroup.appendChild(thCol);
 
-    COLUMNS.forEach(col => {
+    currentCols.forEach(col => {
       const c = document.createElement('col');
       const w = (sheet.colWidths && sheet.colWidths[col]) || (col === 'A' ? 220 : (col === 'B' ? 110 : 70));
       c.style.width = w + 'px';
@@ -652,7 +755,7 @@
     });
     gridTable.appendChild(colgroup);
 
-    // Header Row (A, B, C, D...)
+    // Header Row (A, B, C, D, E, F...)
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     
@@ -661,11 +764,11 @@
     cornerTh.className = 'grid-corner-cell';
     cornerTh.title = 'Vybrať celú tabuľku';
     cornerTh.addEventListener('click', () => {
-      updateSelectionRange('A', 1, COLUMNS[COLUMNS.length - 1], ROWS_COUNT);
+      updateSelectionRange('A', 1, currentCols[currentCols.length - 1], totalRows);
     });
     headerRow.appendChild(cornerTh);
 
-    COLUMNS.forEach(col => {
+    currentCols.forEach(col => {
       const th = document.createElement('th');
       th.className = 'grid-header-col';
       th.dataset.col = col;
@@ -677,16 +780,16 @@
       `;
       th.addEventListener('mousedown', (e) => {
         if (e.target.classList.contains('col-resize-handle')) return;
-        updateSelectionRange(col, 1, col, ROWS_COUNT);
+        updateSelectionRange(col, 1, col, totalRows);
       });
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
     gridTable.appendChild(thead);
 
-    // Body Rows (1 to 24)
+    // Body Rows
     const tbody = document.createElement('tbody');
-    for (let r = 1; r <= ROWS_COUNT; r++) {
+    for (let r = 1; r <= totalRows; r++) {
       const tr = document.createElement('tr');
       const rowHeight = (sheet.rowHeights && sheet.rowHeights[r]) || 24;
       tr.style.height = rowHeight + 'px';
@@ -704,12 +807,12 @@
       `;
       th.addEventListener('mousedown', (e) => {
         if (e.target.classList.contains('row-resize-handle')) return;
-        updateSelectionRange('A', r, COLUMNS[COLUMNS.length - 1], r);
+        updateSelectionRange('A', r, currentCols[currentCols.length - 1], r);
       });
       tr.appendChild(th);
 
       // Data Cells
-      COLUMNS.forEach((col, cIdx) => {
+      currentCols.forEach((col, cIdx) => {
         const addr = col + r;
         const cellData = (sheet.cells && sheet.cells[addr]) || { v: '' };
         const td = document.createElement('td');
@@ -1425,21 +1528,22 @@
     showToast(`Orámovanie bolo aplikované na vybrané bunky (${borderWidth}px, ${borderStyle}).`);
   }
 
-  // --- Row & Column Manipulation ---
+  // --- Row & Column Manipulation (Dynamic Alphabetical & Numeric Expansion) ---
   function insertRowAt(rowToInsert) {
     recordHistory();
     const sheet = getActiveSheet();
-    const range = appState.selectionRange || { startRow: 1 };
-    const targetRow = (typeof rowToInsert === 'number') ? rowToInsert : range.startRow;
-    if (targetRow < 1 || targetRow >= ROWS_COUNT) return;
+    const currentRows = getSheetRowCount(sheet);
+    const range = appState.selectionRange;
+    const targetRow = (typeof rowToInsert === 'number') ? rowToInsert : (range ? range.startRow : currentRows);
+    if (targetRow < 1) return;
 
-    // Shift cells down
+    // Shift cells from targetRow down
     const newCells = {};
     for (const addr in sheet.cells) {
       const { col, row } = parseAddr(addr);
       if (row < targetRow) {
         newCells[addr] = sheet.cells[addr];
-      } else if (row >= targetRow && row < ROWS_COUNT) {
+      } else {
         newCells[`${col}${row + 1}`] = sheet.cells[addr];
       }
     }
@@ -1448,37 +1552,46 @@
     // Shift rowHeights down
     if (sheet.rowHeights) {
       const newHeights = {};
-      for (let r = 1; r <= ROWS_COUNT; r++) {
-        if (r < targetRow) {
-          if (sheet.rowHeights[r]) newHeights[r] = sheet.rowHeights[r];
-        } else if (r === targetRow) {
-          newHeights[r] = 24;
+      for (const r in sheet.rowHeights) {
+        const rowNum = parseInt(r, 10);
+        if (rowNum < targetRow) {
+          newHeights[rowNum] = sheet.rowHeights[rowNum];
         } else {
-          if (sheet.rowHeights[r - 1]) newHeights[r] = sheet.rowHeights[r - 1];
+          newHeights[rowNum + 1] = sheet.rowHeights[rowNum];
         }
       }
+      newHeights[targetRow] = 24;
       sheet.rowHeights = newHeights;
     }
 
-    // Expand exportRange
+    // Increase total row count
+    sheet.rowCount = currentRows + 1;
+
+    // Expand exportRange if affected
     if (sheet.exportRange && sheet.exportRange.endRow >= targetRow) {
-      sheet.exportRange.endRow = Math.min(ROWS_COUNT, sheet.exportRange.endRow + 1);
+      sheet.exportRange.endRow = sheet.exportRange.endRow + 1;
     }
 
     saveAppState();
     renderGrid();
     updatePreview();
-    showToast(`Riadok bol vložený na pozíciu ${targetRow}.`);
+    showToast(`Nový riadok bol vložený na pozíciu ${targetRow}. Celkovo: ${sheet.rowCount} riadkov.`);
   }
 
   function deleteRowAt(rowToDelete) {
     recordHistory();
     const sheet = getActiveSheet();
-    const range = appState.selectionRange || { startRow: 1 };
-    const targetRow = (typeof rowToDelete === 'number') ? rowToDelete : range.startRow;
-    if (targetRow < 1) return;
+    const currentRows = getSheetRowCount(sheet);
+    if (currentRows <= 1) {
+      showToast('Nemožno zmazať posledný riadok.', true);
+      return;
+    }
 
-    // Shift cells up
+    const range = appState.selectionRange;
+    const targetRow = (typeof rowToDelete === 'number') ? rowToDelete : (range ? range.startRow : currentRows);
+    if (targetRow < 1 || targetRow > currentRows) return;
+
+    // Shift cells from targetRow + 1 up
     const newCells = {};
     for (const addr in sheet.cells) {
       const { col, row } = parseAddr(addr);
@@ -1493,46 +1606,60 @@
     // Shift rowHeights up
     if (sheet.rowHeights) {
       const newHeights = {};
-      for (let r = 1; r <= ROWS_COUNT; r++) {
-        if (r < targetRow) {
-          if (sheet.rowHeights[r]) newHeights[r] = sheet.rowHeights[r];
-        } else if (r < ROWS_COUNT) {
-          if (sheet.rowHeights[r + 1]) newHeights[r] = sheet.rowHeights[r + 1];
+      for (const r in sheet.rowHeights) {
+        const rowNum = parseInt(r, 10);
+        if (rowNum < targetRow) {
+          newHeights[rowNum] = sheet.rowHeights[rowNum];
+        } else if (rowNum > targetRow) {
+          newHeights[rowNum - 1] = sheet.rowHeights[rowNum];
         }
       }
       sheet.rowHeights = newHeights;
     }
 
+    // Decrease total row count
+    sheet.rowCount = Math.max(1, currentRows - 1);
+
     // Shrink exportRange
-    if (sheet.exportRange && sheet.exportRange.endRow > sheet.exportRange.startRow) {
-      if (targetRow <= sheet.exportRange.endRow) {
-        sheet.exportRange.endRow--;
+    if (sheet.exportRange) {
+      if (targetRow <= sheet.exportRange.endRow && sheet.exportRange.endRow > 1) {
+        sheet.exportRange.endRow = Math.max(sheet.exportRange.startRow, sheet.exportRange.endRow - 1);
       }
+      if (targetRow < sheet.exportRange.startRow && sheet.exportRange.startRow > 1) {
+        sheet.exportRange.startRow = sheet.exportRange.startRow - 1;
+      }
+    }
+
+    // Update selection if on deleted row
+    if (range && range.startRow > sheet.rowCount) {
+      appState.selectionRange.startRow = sheet.rowCount;
+      appState.selectionRange.endRow = sheet.rowCount;
     }
 
     saveAppState();
     renderGrid();
     updatePreview();
-    showToast(`Riadok ${targetRow} bol zmazaný.`);
+    showToast(`Riadok ${targetRow} bol zmazaný. Celkovo: ${sheet.rowCount} riadkov.`);
   }
 
   function insertColumnAt(colToInsert) {
     recordHistory();
     const sheet = getActiveSheet();
-    const range = appState.selectionRange || { startCol: 'A' };
-    const targetCol = colToInsert || range.startCol;
+    const currentCols = getSheetCols(sheet);
+    const range = appState.selectionRange;
+    const targetCol = colToInsert || (range ? range.startCol : getColName(currentCols.length - 1));
     const targetColIdx = colIndex(targetCol);
-    if (targetColIdx < 0 || targetColIdx >= COLUMNS.length - 1) return;
+    if (targetColIdx < 0) return;
 
-    // Shift cells right
+    // Shift cells from targetColIdx to the right
     const newCells = {};
     for (const addr in sheet.cells) {
       const { col, row } = parseAddr(addr);
       const cIdx = colIndex(col);
       if (cIdx < targetColIdx) {
         newCells[addr] = sheet.cells[addr];
-      } else if (cIdx >= targetColIdx && cIdx < COLUMNS.length - 1) {
-        newCells[`${COLUMNS[cIdx + 1]}${row}`] = sheet.cells[addr];
+      } else {
+        newCells[`${getColName(cIdx + 1)}${row}`] = sheet.cells[addr];
       }
     }
     sheet.cells = newCells;
@@ -1540,46 +1667,55 @@
     // Shift colWidths right
     if (sheet.colWidths) {
       const newWidths = {};
-      COLUMNS.forEach((c, idx) => {
+      for (const c in sheet.colWidths) {
+        const idx = colIndex(c);
         if (idx < targetColIdx) {
-          if (sheet.colWidths[c]) newWidths[c] = sheet.colWidths[c];
-        } else if (idx === targetColIdx) {
-          newWidths[c] = 70; // default for newly inserted column
-        } else if (idx > targetColIdx) {
-          const prevCol = COLUMNS[idx - 1];
-          if (sheet.colWidths[prevCol]) newWidths[c] = sheet.colWidths[prevCol];
+          newWidths[c] = sheet.colWidths[c];
+        } else {
+          newWidths[getColName(idx + 1)] = sheet.colWidths[c];
         }
-      });
+      }
+      newWidths[targetCol] = 70; // default for newly inserted column
       sheet.colWidths = newWidths;
     }
+
+    // Increase total column count!
+    sheet.colCount = currentCols.length + 1;
 
     // Adjust exportRange
     if (sheet.exportRange) {
       const sIdx = colIndex(sheet.exportRange.startCol);
       const eIdx = colIndex(sheet.exportRange.endCol);
-      if (targetColIdx <= eIdx && eIdx < COLUMNS.length - 1) {
-        sheet.exportRange.endCol = COLUMNS[eIdx + 1];
+      if (targetColIdx <= eIdx) {
+        sheet.exportRange.endCol = getColName(eIdx + 1);
       }
-      if (targetColIdx < sIdx && sIdx < COLUMNS.length - 1) {
-        sheet.exportRange.startCol = COLUMNS[sIdx + 1];
+      if (targetColIdx < sIdx) {
+        sheet.exportRange.startCol = getColName(sIdx + 1);
       }
     }
 
     saveAppState();
     renderGrid();
     updatePreview();
-    showToast(`Nový stĺpec bol vložený na pozíciu ${targetCol}.`);
+    const newColName = getColName(targetColIdx);
+    showToast(`Nový stĺpec bol pridaný (${newColName}). Celkovo: ${sheet.colCount} stĺpcov.`);
   }
 
   function deleteColumnAt(colToDelete) {
     recordHistory();
     const sheet = getActiveSheet();
-    const range = appState.selectionRange || { startCol: 'A' };
-    const targetCol = colToDelete || range.startCol;
-    const targetColIdx = colIndex(targetCol);
-    if (targetColIdx < 0) return;
+    const currentCols = getSheetCols(sheet);
+    if (currentCols.length <= 1) {
+      showToast('Nemožno zmazať posledný stĺpec.', true);
+      return;
+    }
 
-    // Shift cells left
+    const range = appState.selectionRange;
+    const targetCol = colToDelete || (range ? range.startCol : getColName(currentCols.length - 1));
+    const targetColIdx = colIndex(targetCol);
+    if (targetColIdx < 0 || targetColIdx >= currentCols.length) return;
+
+    // Shift cells from targetColIdx + 1 to the left
     const newCells = {};
     for (const addr in sheet.cells) {
       const { col, row } = parseAddr(addr);
@@ -1587,7 +1723,7 @@
       if (cIdx < targetColIdx) {
         newCells[addr] = sheet.cells[addr];
       } else if (cIdx > targetColIdx) {
-        newCells[`${COLUMNS[cIdx - 1]}${row}`] = sheet.cells[addr];
+        newCells[`${getColName(cIdx - 1)}${row}`] = sheet.cells[addr];
       }
     }
     sheet.cells = newCells;
@@ -1595,30 +1731,43 @@
     // Shift colWidths left
     if (sheet.colWidths) {
       const newWidths = {};
-      COLUMNS.forEach((c, idx) => {
+      for (const c in sheet.colWidths) {
+        const idx = colIndex(c);
         if (idx < targetColIdx) {
-          if (sheet.colWidths[c]) newWidths[c] = sheet.colWidths[c];
-        } else if (idx < COLUMNS.length - 1) {
-          const nextCol = COLUMNS[idx + 1];
-          if (sheet.colWidths[nextCol]) newWidths[c] = sheet.colWidths[nextCol];
+          newWidths[c] = sheet.colWidths[c];
+        } else if (idx > targetColIdx) {
+          newWidths[getColName(idx - 1)] = sheet.colWidths[c];
         }
-      });
+      }
       sheet.colWidths = newWidths;
     }
+
+    // Decrease total column count!
+    sheet.colCount = Math.max(1, currentCols.length - 1);
 
     // Adjust exportRange
     if (sheet.exportRange) {
       const sIdx = colIndex(sheet.exportRange.startCol);
-      const eIdx = colIndex(sheet.exportRange.endCol);
-      if (eIdx > sIdx && targetColIdx <= eIdx) {
-        sheet.exportRange.endCol = COLUMNS[Math.max(sIdx, eIdx - 1)];
+      let eIdx = colIndex(sheet.exportRange.endCol);
+      if (targetColIdx <= eIdx && eIdx > 0) {
+        sheet.exportRange.endCol = getColName(Math.max(sIdx, eIdx - 1));
       }
+      if (targetColIdx < sIdx && sIdx > 0) {
+        sheet.exportRange.startCol = getColName(sIdx - 1);
+      }
+    }
+
+    // Update selection if on deleted column
+    if (range && colIndex(range.startCol) >= sheet.colCount) {
+      const maxCol = getColName(sheet.colCount - 1);
+      appState.selectionRange.startCol = maxCol;
+      appState.selectionRange.endCol = maxCol;
     }
 
     saveAppState();
     renderGrid();
     updatePreview();
-    showToast(`Stĺpec ${targetCol} bol zmazaný.`);
+    showToast(`Stĺpec ${targetCol} bol zmazaný. Celkovo: ${sheet.colCount} stĺpcov.`);
   }
 
   if (btnInsertRow) {
