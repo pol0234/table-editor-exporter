@@ -182,14 +182,6 @@
     console.warn('Could not load stored state', e);
   }
 
-  // Ensure Soft-Dried-Papaya is restored if it was accidentally deleted
-  const hasPapaya = appState.sheets.some(s => s.name && s.name.toLowerCase().includes('papaya'));
-  if (!hasPapaya) {
-    const papayaSheet = createDefaultSheets()[0];
-    appState.sheets.unshift(papayaSheet);
-    appState.activeSheetId = papayaSheet.id;
-  }
-
   function saveAppState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -367,15 +359,32 @@
   // Workspace & Drawer
   const spreadsheetArea = document.getElementById('spreadsheetArea');
 
-  // Drawer & Splitter
+  // Drawer & Splitter & Toggle
   const averyPreviewDrawer = document.getElementById('averyPreviewDrawer');
   const workspaceSplitter = document.getElementById('workspaceSplitter');
+  const btnTogglePreviewDrawer = document.getElementById('btnTogglePreviewDrawer');
+  const btnCloseDrawer = document.getElementById('btnCloseDrawer');
   const btnToggleDrawerExpand = document.getElementById('btnToggleDrawerExpand');
   const previewZoomSelect = document.getElementById('previewZoomSelect');
   const previewViewport = document.getElementById('previewViewport');
   const btnBgWhite = document.getElementById('btnBgWhite');
   const btnBgCheck = document.getElementById('btnBgCheck');
   const btnTogglePrintGuides = document.getElementById('btnTogglePrintGuides');
+
+  // Context Menu Elements
+  const excelContextMenu = document.getElementById('excelContextMenu');
+  const ctxShowInPreview = document.getElementById('ctxShowInPreview');
+  const ctxCopyTable = document.getElementById('ctxCopyTable');
+  const ctxPasteExcel = document.getElementById('ctxPasteExcel');
+  const ctxSetExportRange = document.getElementById('ctxSetExportRange');
+  const ctxTogglePrint = document.getElementById('ctxTogglePrint');
+  const ctxClearContent = document.getElementById('ctxClearContent');
+  const ctxClearFormat = document.getElementById('ctxClearFormat');
+  const ctxAutoFit = document.getElementById('ctxAutoFit');
+  const ctxInsertRow = document.getElementById('ctxInsertRow');
+  const ctxDeleteRow = document.getElementById('ctxDeleteRow');
+  const ctxInsertCol = document.getElementById('ctxInsertCol');
+  const ctxDeleteCol = document.getElementById('ctxDeleteCol');
 
   // Restore drawer width
   const savedDrawerWidth = localStorage.getItem(DRAWER_WIDTH_KEY);
@@ -1928,6 +1937,231 @@
       btnBgWhite.classList.remove('active');
       previewViewport.className = 'avery-drawer-body viewport-checkerboard';
     });
+  }
+
+  // --- Toggle Preview Drawer Visibility (Persistent) ---
+  const DRAWER_VISIBLE_KEY = 'oco_avery_drawer_visible_v3';
+
+  function setDrawerVisible(visible) {
+    if (!averyPreviewDrawer) return;
+    if (visible) {
+      averyPreviewDrawer.classList.remove('drawer-closed');
+      if (workspaceSplitter) workspaceSplitter.classList.remove('drawer-closed');
+      if (btnTogglePreviewDrawer) btnTogglePreviewDrawer.classList.add('active');
+      localStorage.setItem(DRAWER_VISIBLE_KEY, 'true');
+      updatePreview();
+      if (previewZoomSelect && previewZoomSelect.value === 'fit') {
+        applyFitZoom();
+      }
+    } else {
+      averyPreviewDrawer.classList.add('drawer-closed');
+      if (workspaceSplitter) workspaceSplitter.classList.add('drawer-closed');
+      if (btnTogglePreviewDrawer) btnTogglePreviewDrawer.classList.remove('active');
+      localStorage.setItem(DRAWER_VISIBLE_KEY, 'false');
+    }
+  }
+
+  // Restore drawer visibility state
+  const savedDrawerVisible = localStorage.getItem(DRAWER_VISIBLE_KEY);
+  if (savedDrawerVisible === 'false') {
+    setDrawerVisible(false);
+  } else {
+    setDrawerVisible(true);
+  }
+
+  if (btnTogglePreviewDrawer) {
+    btnTogglePreviewDrawer.addEventListener('click', () => {
+      const isClosed = averyPreviewDrawer && averyPreviewDrawer.classList.contains('drawer-closed');
+      setDrawerVisible(isClosed);
+    });
+  }
+
+  if (btnCloseDrawer) {
+    btnCloseDrawer.addEventListener('click', () => {
+      setDrawerVisible(false);
+    });
+  }
+
+  // --- Excel Authentic Context Menu (Right-Click on Grid Cells) ---
+  if (gridTable && excelContextMenu) {
+    gridTable.addEventListener('contextmenu', (e) => {
+      const td = e.target.closest('td.grid-cell');
+      if (!td) return;
+      e.preventDefault();
+
+      const col = td.dataset.col;
+      const row = parseInt(td.dataset.row, 10);
+      if (!col || isNaN(row)) return;
+
+      // Check if clicked cell is within current selection
+      const cur = appState.selectionRange;
+      const sC = Math.min(colIndex(cur.startCol), colIndex(cur.endCol));
+      const eC = Math.max(colIndex(cur.startCol), colIndex(cur.endCol));
+      const sR = Math.min(cur.startRow, cur.endRow);
+      const eR = Math.max(cur.startRow, cur.endRow);
+      const cIdx = colIndex(col);
+
+      const isInside = (cIdx >= sC && cIdx <= eC && row >= sR && row <= eR);
+      if (!isInside) {
+        updateSelectionRange(col, row, col, row);
+      }
+
+      // Safe positioning within viewport
+      const menuW = 250;
+      const menuH = 390;
+      let x = e.clientX;
+      let y = e.clientY;
+      if (x + menuW > window.innerWidth) x = Math.max(10, window.innerWidth - menuW - 12);
+      if (y + menuH > window.innerHeight) y = Math.max(10, window.innerHeight - menuH - 12);
+
+      excelContextMenu.style.left = `${Math.max(10, x)}px`;
+      excelContextMenu.style.top = `${Math.max(10, y)}px`;
+      excelContextMenu.style.display = 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!excelContextMenu.contains(e.target)) {
+        excelContextMenu.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        excelContextMenu.style.display = 'none';
+      }
+    });
+  }
+
+  if (ctxShowInPreview) {
+    ctxShowInPreview.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      recordHistory();
+      const sheet = getActiveSheet();
+      const cur = appState.selectionRange;
+      const isMulti = (cur.startCol !== cur.endCol || cur.startRow !== cur.endRow);
+      if (isMulti) {
+        const sC = COLUMNS[Math.min(colIndex(cur.startCol), colIndex(cur.endCol))];
+        const eC = COLUMNS[Math.max(colIndex(cur.startCol), colIndex(cur.endCol))];
+        const sR = Math.min(cur.startRow, cur.endRow);
+        const eR = Math.max(cur.startRow, cur.endRow);
+        sheet.exportRange = { startCol: sC, startRow: sR, endCol: eC, endRow: eR, isManual: true };
+      } else {
+        const eff = getEffectiveExportRange(sheet);
+        sheet.exportRange = Object.assign({}, eff, { isManual: true });
+      }
+      saveAppState();
+      setDrawerVisible(true);
+      updatePreview();
+      renderGrid();
+      showToast('Tabuľka nastavená a zobrazená v náhľade.', true);
+    });
+  }
+
+  if (ctxCopyTable) {
+    ctxCopyTable.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnCopyAvery.click();
+    });
+  }
+
+  if (ctxPasteExcel) {
+    ctxPasteExcel.addEventListener('click', async () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            pasteTsvText(text);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Clipboard read error, fallback to prompt', err);
+      }
+      const promptText = prompt('Vložte skopírovanú tabuľku z Excelu (Ctrl+V):');
+      if (promptText) {
+        pasteTsvText(promptText);
+      }
+    });
+  }
+
+  if (ctxSetExportRange) {
+    ctxSetExportRange.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnSetExportRange.click();
+    });
+  }
+
+  if (ctxTogglePrint) {
+    ctxTogglePrint.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnTogglePrintView.click();
+    });
+  }
+
+  if (ctxClearContent) {
+    ctxClearContent.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnClearContent.click();
+    });
+  }
+
+  if (ctxClearFormat) {
+    ctxClearFormat.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnClearFormat.click();
+    });
+  }
+
+  if (ctxAutoFit) {
+    ctxAutoFit.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      const cur = appState.selectionRange;
+      const sC = Math.min(colIndex(cur.startCol), colIndex(cur.endCol));
+      const eC = Math.max(colIndex(cur.startCol), colIndex(cur.endCol));
+      for (let c = sC; c <= eC; c++) {
+        autoFitCol(COLUMNS[c]);
+      }
+    });
+  }
+
+  if (ctxInsertRow) {
+    ctxInsertRow.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnInsertRow.click();
+    });
+  }
+
+  if (ctxDeleteRow) {
+    ctxDeleteRow.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnDeleteRow.click();
+    });
+  }
+
+  if (ctxInsertCol) {
+    ctxInsertCol.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnInsertCol.click();
+    });
+  }
+
+  if (ctxDeleteCol) {
+    ctxDeleteCol.addEventListener('click', () => {
+      if (excelContextMenu) excelContextMenu.style.display = 'none';
+      btnDeleteCol.click();
+    });
+  }
+
+  // --- Horizontal mouse wheel scroll for ribbon toolbar ---
+  const ribbonToolbar = document.querySelector('.excel-ribbon-toolbar');
+  if (ribbonToolbar) {
+    ribbonToolbar.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        ribbonToolbar.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
   }
 
   // --- SVG Live Preview Generator With Custom Pixel Borders & Real Dimensions ---

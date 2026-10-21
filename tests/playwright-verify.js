@@ -21,11 +21,11 @@ async function runVerification() {
 
   await page.goto(fileUrl, { waitUntil: 'load' });
 
-  // 1. Verify Clean Title without emoji and without "pre Avery"
-  const title = await page.textContent('.file-title');
+  // 1. Verify Clean Title strictly "Tabuľkový editor" without emoji
+  const title = (await page.textContent('.file-title')).trim();
   console.log('Page Title:', title);
-  if (title.includes('Avery') || /[\u{1F300}-\u{1F6FF}]/u.test(title)) {
-    throw new Error(`Title should not contain "Avery" or emojis: ${title}`);
+  if (title !== 'Tabuľkový editor') {
+    throw new Error(`Title expected "Tabuľkový editor", got: "${title}"`);
   }
 
   // 2. Verify Primary Copy Button text is clean "Kopírovať" (no "pre avery", no emojis)
@@ -317,9 +317,75 @@ async function runVerification() {
   if (!rangeAfterMouseDrag.includes('C12:D12')) {
     throw new Error(`Expected range after mouse drag to be C12:D12, got "${rangeAfterMouseDrag}"`);
   }
-  console.log('Mouse table drag relocation verified successfully.');
+  // 19. Verify Drawer Header is "Náhľad (export)"
+  console.log('Testing Drawer Header and Toggle...');
+  const drawerHeader = (await page.textContent('#averyPreviewDrawer h3')).trim();
+  console.log('Drawer Header:', drawerHeader);
+  if (!drawerHeader.includes('Náhľad (export)')) {
+    throw new Error(`Expected drawer header "Náhľad (export)", got "${drawerHeader}"`);
+  }
 
-  // 19. Capture screenshot to verification file
+  // 20. Test Drawer Toggle Button (Hide / Show)
+  console.log('Testing Preview Drawer Toggle...');
+  await page.click('#btnTogglePreviewDrawer');
+  let isDrawerClosed = await page.evaluate(() => document.getElementById('averyPreviewDrawer').classList.contains('drawer-closed'));
+  console.log('Drawer closed after toggle click:', isDrawerClosed);
+  if (!isDrawerClosed) {
+    throw new Error('Preview drawer should have class "drawer-closed" after clicking #btnTogglePreviewDrawer!');
+  }
+
+  // Toggle back on
+  await page.click('#btnTogglePreviewDrawer');
+  isDrawerClosed = await page.evaluate(() => document.getElementById('averyPreviewDrawer').classList.contains('drawer-closed'));
+  console.log('Drawer closed after second toggle click:', isDrawerClosed);
+  if (isDrawerClosed) {
+    throw new Error('Preview drawer should NOT be closed after toggling back on!');
+  }
+
+  // Test Close Drawer Button (&times; Skryť)
+  await page.click('#btnCloseDrawer');
+  isDrawerClosed = await page.evaluate(() => document.getElementById('averyPreviewDrawer').classList.contains('drawer-closed'));
+  if (!isDrawerClosed) {
+    throw new Error('Preview drawer should be closed after clicking #btnCloseDrawer!');
+  }
+
+  // 21. Test Context Menu on Cell Right-Click
+  console.log('Testing Excel Authentic Context Menu...');
+  await page.click('td[data-addr="B2"]', { button: 'right' });
+  const isMenuVisible = await page.evaluate(() => {
+    const el = document.getElementById('excelContextMenu');
+    return el && window.getComputedStyle(el).display !== 'none';
+  });
+  console.log('Context menu visible on right click:', isMenuVisible);
+  if (!isMenuVisible) {
+    throw new Error('Context menu #excelContextMenu should be visible on right-click!');
+  }
+
+  // Click "Zobraziť túto tabuľku v náhľade" in context menu
+  await page.click('#ctxShowInPreview');
+  isDrawerClosed = await page.evaluate(() => document.getElementById('averyPreviewDrawer').classList.contains('drawer-closed'));
+  console.log('Drawer visible after ctxShowInPreview:', !isDrawerClosed);
+  if (isDrawerClosed) {
+    throw new Error('Drawer should be reopened after clicking "Zobraziť túto tabuľku v náhľade"!');
+  }
+
+  // 22. Verify Aesthetic Symmetrical Export Grid in Drawer Footer
+  console.log('Verifying Export Grid in Drawer Footer...');
+  const exportCardsCount = await page.evaluate(() => document.querySelectorAll('.export-actions-grid .export-card-btn').length);
+  console.log('Found export card buttons in grid:', exportCardsCount);
+  if (exportCardsCount !== 3) {
+    throw new Error(`Expected 3 export card buttons (SVG, PNG, JPG), found ${exportCardsCount}`);
+  }
+
+  // 23. Verify Zero Emojis in Entire DOM
+  const pageHtml = await page.content();
+  const emojiRegex = /[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+  if (emojiRegex.test(pageHtml)) {
+    throw new Error('Page contains forbidden emojis!');
+  }
+  console.log('Zero emojis verified across full DOM.');
+
+  // 24. Capture screenshot to verification file
   await page.screenshot({ path: path.resolve(__dirname, '../verification-excel-ui.png') });
   console.log('Screenshot saved to verification-excel-ui.png');
 

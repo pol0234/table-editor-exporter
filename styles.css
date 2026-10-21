@@ -138,14 +138,23 @@ body {
 .excel-ribbon-toolbar {
   background: var(--bg-ribbon);
   border-bottom: 1px solid var(--border-medium);
-  padding: 4px 6px;
+  padding: 3px clamp(3px, 0.5vw, 6px) 1px clamp(3px, 0.5vw, 6px);
   display: flex;
   align-items: stretch;
-  gap: 2px;
-  height: 86px;
+  gap: clamp(1px, 0.25vw, 3px);
+  min-height: 84px;
+  max-height: 86px;
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.excel-ribbon-toolbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .ribbon-group {
@@ -153,10 +162,10 @@ body {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   height: 100%;
   border-right: 1px solid var(--border-light);
-  padding: 0 4px;
+  padding: 0 clamp(2px, 0.35vw, 5px);
   flex-shrink: 0;
 }
 
@@ -957,8 +966,16 @@ body {
   transform-origin: center center;
 }
 
+.avery-preview-drawer.drawer-closed {
+  display: none !important;
+}
+
+.workspace-splitter.drawer-closed {
+  display: none !important;
+}
+
 .avery-drawer-footer {
-  padding: 12px 16px;
+  padding: 10px 12px;
   background: #ffffff;
   border-top: 1px solid var(--border-medium);
   display: flex;
@@ -971,44 +988,146 @@ body {
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  box-shadow: 0 2px 4px rgba(16, 124, 65, 0.3);
-  transition: background 0.15s;
+  gap: 7px;
+  box-shadow: 0 2px 5px rgba(16, 124, 65, 0.28);
+  transition: background 0.15s, transform 0.1s;
 }
 
 .avery-big-btn:hover {
   background: var(--excel-green-hover);
+  transform: translateY(-1px);
 }
 
-.avery-sub-btn-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.avery-sub-btn {
-  background: #ffffff;
-  border: 1px solid var(--border-strong);
-  color: var(--text-main);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 0.8rem;
+.btn-badge-hd {
+  background: rgba(255, 255, 255, 0.22);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.68rem;
   font-weight: 600;
-  cursor: pointer;
-  text-align: center;
+  letter-spacing: 0.5px;
 }
 
-.avery-sub-btn:hover {
+.export-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.export-card-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  color: var(--text-main);
+}
+
+.export-card-btn svg {
+  color: #555555;
+  transition: color 0.12s;
+}
+
+.export-card-btn:hover {
   border-color: var(--excel-green);
+  background: #f7fcf9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.export-card-btn:hover svg {
   color: var(--excel-green);
-  background: var(--excel-green-light);
+}
+
+.export-card-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.export-card-text strong {
+  font-size: 0.74rem;
+  color: #201f1e;
+}
+
+.export-card-text small {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Context Menu (Right-Click na bunky ako v Exceli)
+   ========================================================================== */
+.excel-context-menu {
+  position: fixed;
+  display: none;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #c8c6c4;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 230px;
+  user-select: none;
+  font-size: 0.81rem;
+  color: #201f1e;
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.ctx-item:hover {
+  background: #f3f2f1;
+}
+
+.ctx-item svg {
+  color: #555555;
+  flex-shrink: 0;
+}
+
+.ctx-item:hover svg {
+  color: var(--excel-green);
+}
+
+.ctx-item-primary {
+  font-weight: 600;
+  color: var(--excel-green);
+  background: #f0fdf4;
+}
+
+.ctx-item-primary:hover {
+  background: #dcfce7;
+}
+
+.ctx-shortcut {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: #8a8886;
+}
+
+.ctx-divider {
+  height: 1px;
+  background: #e1dfdd;
+  margin: 4px 0;
 }
 
 /* ==========================================================================
