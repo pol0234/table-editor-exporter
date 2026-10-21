@@ -108,6 +108,30 @@ body {
   gap: 10px;
 }
 
+.titlebar-tool-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: white;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.1s;
+}
+
+.titlebar-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.titlebar-tool-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ==========================================================================
    2. Excel Ribbon Toolbar (Pás nástrojov)
    ========================================================================== */
@@ -606,14 +630,15 @@ body {
 .col-resize-handle {
   position: absolute;
   top: 0;
-  right: 0;
-  width: 6px;
+  right: -3px;
+  width: 7px;
   height: 100%;
   cursor: col-resize;
-  z-index: 15;
+  z-index: 25;
 }
 
-.col-resize-handle:hover {
+.col-resize-handle:hover,
+.col-resize-handle.active {
   background: var(--excel-green);
 }
 
@@ -629,6 +654,21 @@ body {
   left: 0;
   z-index: 5;
   user-select: none;
+}
+
+.row-resize-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 7px;
+  cursor: row-resize;
+  z-index: 25;
+}
+
+.row-resize-handle:hover,
+.row-resize-handle.active {
+  background: var(--excel-green);
 }
 
 /* Cells */
@@ -665,6 +705,51 @@ body {
   border-right: 2px solid var(--excel-selection) !important;
 }
 
+/* Draggable selection border handles */
+.grid-cell.range-top::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: move;
+  z-index: 12;
+}
+
+.grid-cell.range-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: move;
+  z-index: 12;
+}
+
+.grid-cell.range-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 6px;
+  cursor: move;
+  z-index: 12;
+}
+
+.grid-cell.range-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -3px;
+  width: 6px;
+  cursor: move;
+  z-index: 12;
+}
+
 /* Active Anchor Cell in selection */
 .grid-cell.selected {
   outline: 2px solid var(--excel-selection);
@@ -681,7 +766,52 @@ body {
   height: 6px;
   background: var(--excel-selection);
   border: 1px solid white;
-  z-index: 10;
+  cursor: crosshair;
+  z-index: 15;
+}
+
+/* Ghost outline during mouse table dragging */
+.table-drag-ghost {
+  position: absolute;
+  pointer-events: none;
+  border: 2px dashed #107c41;
+  background: rgba(16, 124, 65, 0.15);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  z-index: 100;
+  transition: none;
+}
+
+/* Print View Mode */
+.spreadsheet-area.print-view-active {
+  background: #444444 !important;
+  padding: 24px;
+}
+
+.spreadsheet-area.print-view-active .excel-grid-table {
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  background: white;
+}
+
+.spreadsheet-area.print-view-active .grid-cell:not(.in-export-range) {
+  opacity: 0.22;
+  background-color: #fafafa !important;
+}
+
+.spreadsheet-area.print-view-active .grid-cell.in-export-range {
+  position: relative;
+  z-index: 2;
+}
+
+.print-dim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #107c41;
+  color: white;
+  font-size: 0.72rem;
+  border-radius: 3px;
+  font-weight: 600;
 }
 
 /* ==========================================================================

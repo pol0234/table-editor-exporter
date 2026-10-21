@@ -182,12 +182,98 @@
     console.warn('Could not load stored state', e);
   }
 
+  // Ensure Soft-Dried-Papaya is restored if it was accidentally deleted
+  const hasPapaya = appState.sheets.some(s => s.name && s.name.toLowerCase().includes('papaya'));
+  if (!hasPapaya) {
+    const papayaSheet = createDefaultSheets()[0];
+    appState.sheets.unshift(papayaSheet);
+    appState.activeSheetId = papayaSheet.id;
+  }
+
   function saveAppState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     } catch (e) {
       console.warn('Could not save state', e);
     }
+  }
+
+  // --- Undo / Redo History System ---
+  const MAX_HISTORY = 40;
+  let undoStack = [];
+  let redoStack = [];
+
+  function recordHistory() {
+    try {
+      const snapshot = JSON.stringify({
+        sheets: appState.sheets,
+        activeSheetId: appState.activeSheetId,
+        selectionRange: appState.selectionRange
+      });
+      undoStack.push(snapshot);
+      if (undoStack.length > MAX_HISTORY) undoStack.shift();
+      redoStack = []; // Clear redo stack on new action
+      updateUndoRedoButtons();
+    } catch (e) {
+      console.warn('History record error', e);
+    }
+  }
+
+  function undo() {
+    if (undoStack.length === 0) {
+      showToast('Už nie je k dispozícii žiadny krok späť.', false);
+      return;
+    }
+    const current = JSON.stringify({
+      sheets: appState.sheets,
+      activeSheetId: appState.activeSheetId,
+      selectionRange: appState.selectionRange
+    });
+    redoStack.push(current);
+
+    const prev = JSON.parse(undoStack.pop());
+    appState.sheets = prev.sheets;
+    appState.activeSheetId = prev.activeSheetId;
+    appState.selectionRange = prev.selectionRange;
+    saveAppState();
+    renderSheetTabs();
+    renderGrid();
+    updatePreview();
+    updateUndoRedoButtons();
+    showToast('Krok späť vykonaný.');
+  }
+
+  function redo() {
+    if (redoStack.length === 0) {
+      showToast('Už nie je k dispozícii žiadny krok dopredu.', false);
+      return;
+    }
+    const current = JSON.stringify({
+      sheets: appState.sheets,
+      activeSheetId: appState.activeSheetId,
+      selectionRange: appState.selectionRange
+    });
+    undoStack.push(current);
+
+    const next = JSON.parse(redoStack.pop());
+    appState.sheets = next.sheets;
+    appState.activeSheetId = next.activeSheetId;
+    appState.selectionRange = next.selectionRange;
+    saveAppState();
+    renderSheetTabs();
+    renderGrid();
+    updatePreview();
+    updateUndoRedoButtons();
+    showToast('Krok dopredu vykonaný.');
+  }
+
+  function updateUndoRedoButtons() {
+    const canUndo = undoStack.length > 0;
+    const canRedo = redoStack.length > 0;
+    if (btnUndo) btnUndo.disabled = !canUndo;
+    if (btnRedo) btnRedo.disabled = !canRedo;
+    if (btnTitleUndo) btnTitleUndo.disabled = !canUndo;
+    if (btnTitleRedo) btnTitleRedo.disabled = !canRedo;
   }
 
   function getActiveSheet() {
@@ -263,15 +349,23 @@
   const btnMoveRight = document.getElementById('btnMoveRight');
   const btnClearContent = document.getElementById('btnClearContent');
   const btnClearFormat = document.getElementById('btnClearFormat');
+  const btnUndo = document.getElementById('btnUndo');
+  const btnRedo = document.getElementById('btnRedo');
+  const btnTitleUndo = document.getElementById('btnTitleUndo');
+  const btnTitleRedo = document.getElementById('btnTitleRedo');
 
   // Export & Files
   const btnSetExportRange = document.getElementById('btnSetExportRange');
+  const btnTogglePrintView = document.getElementById('btnTogglePrintView');
   const btnCopyAvery = document.getElementById('btnCopyAvery');
   const btnExportSvg = document.getElementById('btnExportSvg');
   const btnExportPng = document.getElementById('btnExportPng');
   const btnExportJpg = document.getElementById('btnExportJpg');
   const btnUploadExcel = document.getElementById('btnUploadExcel');
   const excelFilePicker = document.getElementById('excelFilePicker');
+
+  // Workspace & Drawer
+  const spreadsheetArea = document.getElementById('spreadsheetArea');
 
   // Drawer & Splitter
   const averyPreviewDrawer = document.getElementById('averyPreviewDrawer');
@@ -281,6 +375,7 @@
   const previewViewport = document.getElementById('previewViewport');
   const btnBgWhite = document.getElementById('btnBgWhite');
   const btnBgCheck = document.getElementById('btnBgCheck');
+  const btnTogglePrintGuides = document.getElementById('btnTogglePrintGuides');
 
   // Restore drawer width
   const savedDrawerWidth = localStorage.getItem(DRAWER_WIDTH_KEY);
@@ -347,6 +442,8 @@
     });
   }
 
+  let cellEditHistoryRecorded = false;
+
   // --- Render Spreadsheet Grid ---
   function renderGrid() {
     const sheet = getActiveSheet();
@@ -379,9 +476,11 @@
       const th = document.createElement('th');
       th.className = 'grid-header-col';
       th.dataset.col = col;
+      const w = (sheet.colWidths && sheet.colWidths[col]) || (col === 'A' ? 220 : (col === 'B' ? 110 : 70));
+      th.style.width = w + 'px';
       th.innerHTML = `
         <span>${col}</span>
-        <div class="col-resize-handle" data-col="${col}"></div>
+        <div class="col-resize-handle" data-col="${col}" title="Potiahnutím myšou zmeníte šírku stĺpca ${col}"></div>
       `;
       headerRow.appendChild(th);
     });
@@ -398,8 +497,12 @@
       // Row Header
       const th = document.createElement('th');
       th.className = 'grid-header-row';
-      th.textContent = r;
       th.dataset.row = r;
+      th.style.height = rowHeight + 'px';
+      th.innerHTML = `
+        <span>${r}</span>
+        <div class="row-resize-handle" data-row="${r}" title="Potiahnutím myšou zmeníte výšku riadku ${r}"></div>
+      `;
       tr.appendChild(th);
 
       // Data Cells
@@ -417,9 +520,23 @@
         // Apply borders & formatting
         applyCellStyles(td, cellData);
 
-        // Mouse Drag Selection Handlers
+        // Mouse Drag Selection / Table Move Handlers
         td.addEventListener('mousedown', (e) => {
           if (e.button !== 0) return; // Left click only
+
+          const rect = td.getBoundingClientRect();
+          const isTopBorder = td.classList.contains('range-top') && Math.abs(e.clientY - rect.top) <= 6;
+          const isBottomBorder = td.classList.contains('range-bottom') && Math.abs(e.clientY - rect.bottom) <= 6;
+          const isLeftBorder = td.classList.contains('range-left') && Math.abs(e.clientX - rect.left) <= 6;
+          const isRightBorder = td.classList.contains('range-right') && Math.abs(e.clientX - rect.right) <= 6;
+          const isCornerHandle = td.classList.contains('range-corner-handle') && (rect.right - e.clientX <= 8) && (rect.bottom - e.clientY <= 8);
+
+          if ((isTopBorder || isBottomBorder || isLeftBorder || isRightBorder) && !isCornerHandle) {
+            e.preventDefault();
+            startMouseTableDrag(col, r, e);
+            return;
+          }
+
           isDraggingSelection = true;
           dragAnchor = { col, row: r };
           updateSelectionRange(col, r, col, r);
@@ -433,6 +550,7 @@
 
         // Cell Selection on focus
         td.addEventListener('focus', () => {
+          cellEditHistoryRecorded = false;
           if (!isDraggingSelection) {
             updateSelectionRange(col, r, col, r);
           }
@@ -440,10 +558,18 @@
 
         // Cell Typing / Editing
         td.addEventListener('input', () => {
+          if (!cellEditHistoryRecorded) {
+            recordHistory();
+            cellEditHistoryRecorded = true;
+          }
           const text = td.innerText;
           setCellValue(addr, text);
           formulaInput.value = text;
           updatePreview();
+        });
+
+        td.addEventListener('blur', () => {
+          cellEditHistoryRecorded = false;
         });
 
         // Keydown (Enter, Tab, Arrows)
@@ -465,7 +591,7 @@
     }
     gridTable.appendChild(tbody);
 
-    setupColumnResize();
+    setupGridResize();
     refreshSelectionVisuals();
   }
 
@@ -562,6 +688,13 @@
     const sR = range.startRow;
     const eR = range.endRow;
 
+    const sheet = getActiveSheet();
+    const expRange = getEffectiveExportRange(sheet);
+    const expSC = colIndex(expRange.startCol);
+    const expEC = colIndex(expRange.endCol);
+    const expSR = expRange.startRow;
+    const expER = expRange.endRow;
+
     gridTable.querySelectorAll('td.grid-cell').forEach(td => {
       const c = colIndex(td.dataset.col);
       const r = parseInt(td.dataset.row, 10);
@@ -576,6 +709,9 @@
       td.classList.toggle('range-left', inRange && c === sC);
       td.classList.toggle('range-right', inRange && c === eC);
       td.classList.toggle('range-corner-handle', inRange && c === eC && r === eR);
+
+      const inExpRange = (c >= expSC && c <= expEC && r >= expSR && r <= expER);
+      td.classList.toggle('in-export-range', inExpRange);
     });
   }
 
@@ -616,6 +752,7 @@
 
   // --- Ribbon Button Handlers Applied to Entire Selection Range ---
   boldBtn.addEventListener('click', () => {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     const cells = getCellsInRange();
@@ -636,6 +773,7 @@
   });
 
   italicBtn.addEventListener('click', () => {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     const cells = getCellsInRange();
@@ -659,6 +797,7 @@
   const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48];
 
   function applyFontSize(size) {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     const cells = getCellsInRange();
@@ -697,6 +836,7 @@
 
   if (fontSelect) {
     fontSelect.addEventListener('change', () => {
+      recordHistory();
       const fam = fontSelect.value;
       const sheet = getActiveSheet();
       if (!sheet.cells) sheet.cells = {};
@@ -730,6 +870,7 @@
 
   if (ribbonTextColor) {
     ribbonTextColor.addEventListener('input', () => {
+      recordHistory();
       const color = ribbonTextColor.value;
       if (textColorBar) textColorBar.setAttribute('fill', color);
       const sheet = getActiveSheet();
@@ -747,6 +888,7 @@
 
   if (ribbonFillColor) {
     ribbonFillColor.addEventListener('input', () => {
+      recordHistory();
       const color = ribbonFillColor.value;
       if (fillColorBar) fillColorBar.setAttribute('fill', color);
       const sheet = getActiveSheet();
@@ -769,6 +911,7 @@
 
   // Indents for Selection
   indentIncBtn.addEventListener('click', () => {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     getCellsInRange().forEach(item => {
@@ -783,6 +926,7 @@
   });
 
   indentDecBtn.addEventListener('click', () => {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     getCellsInRange().forEach(item => {
@@ -797,6 +941,7 @@
   });
 
   function applyRangeProp(prop, value) {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     getCellsInRange().forEach(item => {
@@ -830,6 +975,7 @@
   });
 
   function applyBorderToSelection(type) {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet.cells) sheet.cells = {};
     const range = appState.selectionRange || sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
@@ -908,6 +1054,7 @@
   // --- Row & Column Manipulation ---
   if (btnInsertRow) {
     btnInsertRow.addEventListener('click', () => {
+      recordHistory();
       const sheet = getActiveSheet();
       const range = appState.selectionRange || { startRow: 1 };
       const targetRow = range.startRow;
@@ -936,6 +1083,7 @@
 
   if (btnDeleteRow) {
     btnDeleteRow.addEventListener('click', () => {
+      recordHistory();
       const sheet = getActiveSheet();
       const range = appState.selectionRange || { startRow: 1 };
       const targetRow = range.startRow;
@@ -966,6 +1114,7 @@
 
   if (btnInsertCol) {
     btnInsertCol.addEventListener('click', () => {
+      recordHistory();
       const sheet = getActiveSheet();
       const range = appState.selectionRange || { startCol: 'A' };
       const targetColIdx = colIndex(range.startCol);
@@ -991,6 +1140,7 @@
 
   if (btnDeleteCol) {
     btnDeleteCol.addEventListener('click', () => {
+      recordHistory();
       const sheet = getActiveSheet();
       const range = appState.selectionRange || { startCol: 'A' };
       const targetColIdx = colIndex(range.startCol);
@@ -1016,6 +1166,7 @@
 
   // --- Clear Tools ---
   function clearContent() {
+    recordHistory();
     const sheet = getActiveSheet();
     getCellsInRange().forEach(item => {
       if (sheet.cells && sheet.cells[item.addr]) {
@@ -1031,6 +1182,7 @@
   }
 
   function clearFormat() {
+    recordHistory();
     const sheet = getActiveSheet();
     getCellsInRange().forEach(item => {
       if (sheet.cells && sheet.cells[item.addr]) {
@@ -1078,6 +1230,7 @@
 
   // --- Move Table Across Spreadsheet Grid ---
   function moveTable(deltaRow, deltaCol) {
+    recordHistory();
     const sheet = getActiveSheet();
     if (!sheet) return;
     const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
@@ -1156,63 +1309,535 @@
   if (btnMoveLeft) btnMoveLeft.addEventListener('click', () => moveTable(0, -1));
   if (btnMoveRight) btnMoveRight.addEventListener('click', () => moveTable(0, 1));
 
+  // --- Effective Export Range Finder ---
+  function getEffectiveExportRange(sheet) {
+    if (sheet.exportRange && sheet.exportRange.isManual) {
+      return sheet.exportRange;
+    }
+    let minC = 999, maxC = -1, minR = 999, maxR = -1;
+    if (sheet.cells) {
+      for (const addr in sheet.cells) {
+        const cell = sheet.cells[addr];
+        if (cell && (
+          (cell.v !== undefined && String(cell.v).trim() !== '') ||
+          (cell.fillColor && cell.fillColor !== '#ffffff' && cell.fillColor !== 'transparent') ||
+          (cell.borderBottom && cell.borderBottom.width > 0) ||
+          (cell.borderTop && cell.borderTop.width > 0) ||
+          (cell.borderLeft && cell.borderLeft.width > 0) ||
+          (cell.borderRight && cell.borderRight.width > 0)
+        )) {
+          const { col, row } = parseAddr(addr);
+          const cIdx = colIndex(col);
+          if (cIdx >= 0) {
+            if (cIdx < minC) minC = cIdx;
+            if (cIdx > maxC) maxC = cIdx;
+            if (row < minR) minR = row;
+            if (row > maxR) maxR = row;
+          }
+        }
+      }
+    }
+    if (minC <= maxC && minR <= maxR) {
+      return {
+        startCol: COLUMNS[minC],
+        startRow: minR,
+        endCol: COLUMNS[maxC],
+        endRow: maxR
+      };
+    }
+    return sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
+  }
+
   // --- Button: Nastaviť výber ako oblasť pre export ---
   if (btnSetExportRange) {
     btnSetExportRange.addEventListener('click', () => {
+      recordHistory();
       const sheet = getActiveSheet();
       sheet.exportRange = Object.assign({}, appState.selectionRange);
+      sheet.exportRange.isManual = true;
       if (statusBarRange) {
         statusBarRange.textContent = `Export: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
       }
       saveAppState();
+      refreshSelectionVisuals();
       updatePreview();
       showToast(`Oblasť exportu nastavená na ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}.`);
     });
   }
 
-  // --- Column Resize Logic ---
-  function setupColumnResize() {
-    let activeHandle = null;
-    let startX = 0;
-    let startWidth = 0;
-    let colName = '';
+  // --- Print View Mode Toggle ---
+  let isPrintViewActive = false;
+  if (btnTogglePrintView) {
+    btnTogglePrintView.addEventListener('click', () => {
+      isPrintViewActive = !isPrintViewActive;
+      btnTogglePrintView.classList.toggle('active', isPrintViewActive);
+      if (spreadsheetArea) {
+        spreadsheetArea.classList.toggle('print-view-active', isPrintViewActive);
+      }
+      refreshSelectionVisuals();
+      showToast(isPrintViewActive ? 'Zobrazenie pre tlač zapnuté (tlačová oblasť je zvýraznená).' : 'Štandardné zobrazenie mriežky.');
+    });
+  }
 
+  let showPrintGuides = false;
+  if (btnTogglePrintGuides) {
+    btnTogglePrintGuides.addEventListener('click', () => {
+      showPrintGuides = !showPrintGuides;
+      btnTogglePrintGuides.classList.toggle('active', showPrintGuides);
+      updatePreview();
+      showToast(showPrintGuides ? 'Rozmery tlače zobrazené.' : 'Rozmery tlače skryté.');
+    });
+  }
+
+  // --- Column & Row Resizing Logic ---
+  let activeColHandle = null;
+  let activeRowHandle = null;
+  let resizeStartX = 0;
+  let resizeStartY = 0;
+  let resizeStartDim = 0;
+  let resizeTargetName = '';
+
+  function setupGridResize() {
+    // Column resize handles
     gridTable.querySelectorAll('.col-resize-handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        activeHandle = handle;
-        colName = handle.dataset.col;
-        startX = e.clientX;
+        activeColHandle = handle;
+        resizeTargetName = handle.dataset.col;
+        resizeStartX = e.clientX;
         const th = handle.closest('th');
-        startWidth = th.offsetWidth;
-
+        resizeStartDim = th.offsetWidth;
         document.body.style.cursor = 'col-resize';
+      });
+
+      handle.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        autoFitCol(handle.dataset.col);
       });
     });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!activeHandle) return;
-      const diff = e.clientX - startX;
-      const newWidth = Math.max(40, startWidth + diff);
-      const sheet = getActiveSheet();
-      if (!sheet.colWidths) sheet.colWidths = {};
-      sheet.colWidths[colName] = newWidth;
+    // Row resize handles
+    gridTable.querySelectorAll('.row-resize-handle').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        activeRowHandle = handle;
+        resizeTargetName = handle.dataset.row;
+        resizeStartY = e.clientY;
+        const tr = handle.closest('tr');
+        resizeStartDim = tr.offsetHeight;
+        document.body.style.cursor = 'row-resize';
+      });
 
-      const colIdx = COLUMNS.indexOf(colName) + 1;
-      const colEl = gridTable.querySelectorAll('col')[colIdx];
-      if (colEl) colEl.style.width = newWidth + 'px';
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (activeHandle) {
-        activeHandle = null;
-        document.body.style.cursor = '';
-        saveAppState();
-        updatePreview();
-      }
+      handle.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        autoFitRow(parseInt(handle.dataset.row, 10));
+      });
     });
   }
+
+  function autoFitCol(colLetter) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    let maxW = 50;
+    for (let r = 1; r <= ROWS_COUNT; r++) {
+      const td = gridTable.querySelector(`td[data-addr="${colLetter}${r}"]`);
+      if (td && td.innerText.trim()) {
+        const textLen = td.innerText.length;
+        const estW = Math.max(60, textLen * 9 + 20);
+        if (estW > maxW) maxW = estW;
+      }
+    }
+    if (!sheet.colWidths) sheet.colWidths = {};
+    sheet.colWidths[colLetter] = Math.min(400, maxW);
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Šírka stĺpca ${colLetter} bola automaticky prispôsobená.`);
+  }
+
+  function autoFitRow(rowNum) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    let maxH = 24;
+    COLUMNS.forEach(col => {
+      const td = gridTable.querySelector(`td[data-addr="${col}${rowNum}"]`);
+      if (td && td.innerText.trim()) {
+        const lines = td.innerText.split('\n').length;
+        const estH = Math.max(24, lines * 20 + 8);
+        if (estH > maxH) maxH = estH;
+      }
+    });
+    if (!sheet.rowHeights) sheet.rowHeights = {};
+    sheet.rowHeights[rowNum] = maxH;
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Výška riadku ${rowNum} bola automaticky prispôsobená.`);
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    if (activeColHandle) {
+      const diff = e.clientX - resizeStartX;
+      const newWidth = Math.max(35, resizeStartDim + diff);
+      const sheet = getActiveSheet();
+      if (!sheet.colWidths) sheet.colWidths = {};
+      sheet.colWidths[resizeTargetName] = newWidth;
+
+      const colIdx = COLUMNS.indexOf(resizeTargetName) + 1;
+      const colEl = gridTable.querySelectorAll('col')[colIdx];
+      if (colEl) colEl.style.width = newWidth + 'px';
+      const thEl = gridTable.querySelector(`th.grid-header-col[data-col="${resizeTargetName}"]`);
+      if (thEl) thEl.style.width = newWidth + 'px';
+    } else if (activeRowHandle) {
+      const diff = e.clientY - resizeStartY;
+      const newHeight = Math.max(18, resizeStartDim + diff);
+      const sheet = getActiveSheet();
+      if (!sheet.rowHeights) sheet.rowHeights = {};
+      const rNum = parseInt(resizeTargetName, 10);
+      sheet.rowHeights[rNum] = newHeight;
+
+      const tr = gridTable.querySelector(`tbody tr:nth-child(${rNum})`);
+      if (tr) tr.style.height = newHeight + 'px';
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (activeColHandle || activeRowHandle) {
+      recordHistory();
+      activeColHandle = null;
+      activeRowHandle = null;
+      document.body.style.cursor = '';
+      saveAppState();
+      updatePreview();
+    }
+  });
+
+  // --- Mouse Table Relocation (Drag & Drop) ---
+  let isDraggingTableMouse = false;
+  let dragTableOrigin = { col: 'A', row: 1 };
+  let dragTableCurrentTarget = { col: 'A', row: 1 };
+  let tableDragGhostEl = null;
+
+  function startMouseTableDrag(col, row, e) {
+    isDraggingTableMouse = true;
+    dragTableOrigin = { col, row };
+    dragTableCurrentTarget = { col, row };
+
+    if (!tableDragGhostEl) {
+      tableDragGhostEl = document.createElement('div');
+      tableDragGhostEl.className = 'table-drag-ghost';
+      document.body.appendChild(tableDragGhostEl);
+    }
+    updateDragGhostPosition();
+    document.body.style.cursor = 'move';
+    document.body.style.userSelect = 'none';
+
+    function onMouseMove(moveEvent) {
+      if (!isDraggingTableMouse) return;
+      const hovered = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+      const td = hovered && hovered.closest('td.grid-cell');
+      if (td && td.dataset.col && td.dataset.row) {
+        dragTableCurrentTarget = {
+          col: td.dataset.col,
+          row: parseInt(td.dataset.row, 10)
+        };
+        updateDragGhostPosition();
+      }
+    }
+
+    function onMouseUp() {
+      if (!isDraggingTableMouse) return;
+      isDraggingTableMouse = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      if (tableDragGhostEl && tableDragGhostEl.parentNode) {
+        tableDragGhostEl.parentNode.removeChild(tableDragGhostEl);
+        tableDragGhostEl = null;
+      }
+
+      const deltaRow = dragTableCurrentTarget.row - dragTableOrigin.row;
+      const deltaCol = colIndex(dragTableCurrentTarget.col) - colIndex(dragTableOrigin.col);
+      if (deltaRow !== 0 || deltaCol !== 0) {
+        recordHistory();
+        moveTable(deltaRow, deltaCol);
+      }
+    }
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
+  function updateDragGhostPosition() {
+    if (!tableDragGhostEl) return;
+    const sheet = getActiveSheet();
+    const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
+    const deltaRow = dragTableCurrentTarget.row - dragTableOrigin.row;
+    const deltaCol = colIndex(dragTableCurrentTarget.col) - colIndex(dragTableOrigin.col);
+
+    const sC = Math.max(0, Math.min(COLUMNS.length - 1, colIndex(range.startCol) + deltaCol));
+    const eC = Math.max(0, Math.min(COLUMNS.length - 1, colIndex(range.endCol) + deltaCol));
+    const sR = Math.max(1, Math.min(ROWS_COUNT, range.startRow + deltaRow));
+    const eR = Math.max(1, Math.min(ROWS_COUNT, range.endRow + deltaRow));
+
+    const topLeftTd = gridTable.querySelector(`td[data-addr="${COLUMNS[sC]}${sR}"]`);
+    const bottomRightTd = gridTable.querySelector(`td[data-addr="${COLUMNS[eC]}${eR}"]`);
+
+    if (topLeftTd && bottomRightTd) {
+      const r1 = topLeftTd.getBoundingClientRect();
+      const r2 = bottomRightTd.getBoundingClientRect();
+      tableDragGhostEl.style.left = r1.left + 'px';
+      tableDragGhostEl.style.top = r1.top + 'px';
+      tableDragGhostEl.style.width = (r2.right - r1.left) + 'px';
+      tableDragGhostEl.style.height = (r2.bottom - r1.top) + 'px';
+      tableDragGhostEl.style.display = 'block';
+    }
+  }
+
+  // --- Paste from Excel (HTML & TSV) with 100% Format Preservation ---
+  function parseExcelBorder(bStr) {
+    if (!bStr) return null;
+    const m = bStr.match(/([\d\.]+)\s*(pt|px)?\s+([a-z]+)\s*(.*)/i);
+    if (m) {
+      const rawW = parseFloat(m[1]) || 1;
+      let width = 1;
+      if (rawW > 1.5) width = 3;
+      else if (rawW > 0.8) width = 2;
+      else width = 1;
+      let color = m[4] ? m[4].trim() : '#000000';
+      if (color === 'windowtext' || color === 'auto' || !color) color = '#000000';
+      return { width, style: m[3].toLowerCase(), color };
+    }
+    return null;
+  }
+
+  function pasteExcelHtml(html) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    if (!sheet.cells) sheet.cells = {};
+    if (!sheet.colWidths) sheet.colWidths = {};
+    if (!sheet.rowHeights) sheet.rowHeights = {};
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const anchor = parseAddr(appState.selectedCell || 'A1');
+    const startColIdx = colIndex(anchor.col);
+    const startRow = anchor.row;
+
+    // Check for colgroup widths
+    const colEls = doc.querySelectorAll('col');
+    colEls.forEach((colEl, idx) => {
+      const c = startColIdx + idx;
+      if (c < COLUMNS.length) {
+        const rawW = parseInt(colEl.getAttribute('width') || colEl.style.width || '0', 10);
+        if (rawW > 0) sheet.colWidths[COLUMNS[c]] = rawW;
+      }
+    });
+
+    const rows = doc.querySelectorAll('tr');
+    if (!rows || rows.length === 0) return;
+
+    let maxC = startColIdx;
+    let maxR = startRow;
+
+    rows.forEach((tr, rIdx) => {
+      const r = startRow + rIdx;
+      if (r > ROWS_COUNT) return;
+      if (r > maxR) maxR = r;
+
+      const trH = parseInt(tr.style.height || tr.getAttribute('height') || '0', 10);
+      if (trH > 0) {
+        sheet.rowHeights[r] = trH;
+      }
+
+      const cells = tr.querySelectorAll('td, th');
+      cells.forEach((td, cIdx) => {
+        const c = startColIdx + cIdx;
+        if (c >= COLUMNS.length) return;
+        if (c > maxC) maxC = c;
+        const colLetter = COLUMNS[c];
+        const addr = `${colLetter}${r}`;
+
+        const tdW = parseInt(td.style.width || td.getAttribute('width') || '0', 10);
+        if (tdW > 0 && (!sheet.colWidths[colLetter] || tdW > sheet.colWidths[colLetter])) {
+          sheet.colWidths[colLetter] = tdW;
+        }
+
+        // Convert <br> to newlines for multiline cells
+        td.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+        const text = (td.textContent || td.innerText || '').trim();
+
+        // Check bold & italic
+        const bold = td.style.fontWeight === 'bold' || parseInt(td.style.fontWeight, 10) >= 600 || !!td.querySelector('b, strong');
+        const italic = td.style.fontStyle === 'italic' || !!td.querySelector('i, em');
+        const align = td.style.textAlign || td.getAttribute('align') || (c > startColIdx ? 'right' : 'left');
+
+        // Font size
+        let fontSize = 11;
+        const fontEl = td.querySelector('[style*="font-size"]') || td.querySelector('font');
+        const fsRaw = td.style.fontSize || (fontEl && fontEl.style.fontSize) || '';
+        const fsMatch = fsRaw.match(/(\d+(?:\.\d+)?)\s*(pt|px)/i);
+        if (fsMatch) {
+          fontSize = fsMatch[2].toLowerCase() === 'pt' ? Math.round(parseFloat(fsMatch[1])) : Math.round(parseFloat(fsMatch[1]) / 1.33);
+        }
+
+        // Font family
+        let fontFamily = 'Calibri';
+        const rawFam = td.style.fontFamily || (fontEl && (fontEl.style.fontFamily || fontEl.getAttribute('face')));
+        if (rawFam) {
+          fontFamily = rawFam.replace(/['"]/g, '').split(',')[0].trim();
+        }
+
+        // Colors
+        let textColor = td.style.color || (fontEl && (fontEl.style.color || fontEl.getAttribute('color'))) || '#000000';
+        if (textColor === 'windowtext' || textColor === 'auto') textColor = '#000000';
+        let fillColor = td.style.backgroundColor || td.getAttribute('bgcolor') || '';
+
+        // Borders
+        const bTop = parseExcelBorder(td.style.borderTop) || parseExcelBorder(td.style.border);
+        const bBottom = parseExcelBorder(td.style.borderBottom) || parseExcelBorder(td.style.border);
+        const bLeft = parseExcelBorder(td.style.borderLeft) || parseExcelBorder(td.style.border);
+        const bRight = parseExcelBorder(td.style.borderRight) || parseExcelBorder(td.style.border);
+
+        const isIndent = text.toLowerCase().startsWith('z toho');
+
+        sheet.cells[addr] = {
+          v: text,
+          bold,
+          italic,
+          fontSize,
+          fontFamily,
+          textColor,
+          fillColor,
+          align,
+          indent: isIndent ? 18 : 0,
+          borderTop: bTop || { width: 1, style: 'solid', color: '#000000' },
+          borderBottom: bBottom || { width: 1, style: 'solid', color: '#000000' },
+          borderLeft: bLeft || { width: 1, style: 'solid', color: '#000000' },
+          borderRight: bRight || { width: 1, style: 'solid', color: '#000000' }
+        };
+      });
+    });
+
+    sheet.exportRange = {
+      startCol: COLUMNS[startColIdx],
+      startRow,
+      endCol: COLUMNS[maxC],
+      endRow: maxR,
+      isManual: true
+    };
+
+    updateSelectionRange(COLUMNS[startColIdx], startRow, COLUMNS[maxC], maxR);
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Tabuľka z Excelu bola úspešne vložená so zachovaním formátovania (${COLUMNS[startColIdx]}${startRow}:${COLUMNS[maxC]}${maxR}).`);
+  }
+
+  function pasteTsvText(text) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    if (!sheet.cells) sheet.cells = {};
+    const lines = text.trim().split(/\r?\n/);
+    const anchor = parseAddr(appState.selectedCell || 'A1');
+    const startColIdx = colIndex(anchor.col);
+    const startRow = anchor.row;
+
+    let maxC = startColIdx;
+    let maxR = startRow;
+
+    lines.forEach((line, rIdx) => {
+      const r = startRow + rIdx;
+      if (r > ROWS_COUNT) return;
+      if (r > maxR) maxR = r;
+      const parts = line.split('\t');
+      parts.forEach((val, cIdx) => {
+        const c = startColIdx + cIdx;
+        if (c >= COLUMNS.length) return;
+        if (c > maxC) maxC = c;
+        const colLetter = COLUMNS[c];
+        const addr = `${colLetter}${r}`;
+        const cleanVal = val.trim();
+        const isIndent = cleanVal.toLowerCase().startsWith('z toho');
+        sheet.cells[addr] = {
+          v: cleanVal,
+          bold: r === startRow,
+          align: c > startColIdx ? 'right' : 'left',
+          indent: isIndent ? 18 : 0,
+          borderTop: { width: 1, style: 'solid', color: '#000000' },
+          borderBottom: { width: 1, style: 'solid', color: '#000000' },
+          borderLeft: { width: 1, style: 'solid', color: '#000000' },
+          borderRight: { width: 1, style: 'solid', color: '#000000' }
+        };
+      });
+    });
+
+    sheet.exportRange = {
+      startCol: COLUMNS[startColIdx],
+      startRow,
+      endCol: COLUMNS[maxC],
+      endRow: maxR,
+      isManual: true
+    };
+
+    updateSelectionRange(COLUMNS[startColIdx], startRow, COLUMNS[maxC], maxR);
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Údaje vložené do buniek ${COLUMNS[startColIdx]}${startRow}:${COLUMNS[maxC]}${maxR}.`);
+  }
+
+  window.addEventListener('paste', (e) => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+      return;
+    }
+    const htmlData = e.clipboardData && e.clipboardData.getData('text/html');
+    const textData = e.clipboardData && e.clipboardData.getData('text/plain');
+
+    if (htmlData && (htmlData.includes('<table') || htmlData.includes('<tr') || htmlData.includes('<td'))) {
+      e.preventDefault();
+      pasteExcelHtml(htmlData);
+    } else if (textData && textData.includes('\t')) {
+      e.preventDefault();
+      pasteTsvText(textData);
+    }
+  });
+
+  // Undo & Redo button connections
+  if (btnUndo) btnUndo.addEventListener('click', undo);
+  if (btnRedo) btnRedo.addEventListener('click', redo);
+  if (btnTitleUndo) btnTitleUndo.addEventListener('click', undo);
+  if (btnTitleRedo) btnTitleRedo.addEventListener('click', redo);
+
+  // Keyboard Shortcuts: Ctrl+Z and Ctrl+Y
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    } else if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z')) {
+      e.preventDefault();
+      redo();
+    } else if (e.key === 'Delete') {
+      recordHistory();
+      clearContent();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      boldBtn.click();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      italicBtn.click();
+    }
+  });
 
   // --- Interactive Splitter for Preview Drawer ---
   if (workspaceSplitter && averyPreviewDrawer) {
@@ -1252,7 +1877,7 @@
   }
 
   // Toggle Drawer Expand Button (Clean labels, no emojis)
-  if (btnToggleDrawerExpand) {
+  if (btnToggleDrawerExpand && averyPreviewDrawer) {
     btnToggleDrawerExpand.addEventListener('click', () => {
       const isExpanded = averyPreviewDrawer.classList.toggle('expanded');
       btnToggleDrawerExpand.textContent = isExpanded ? 'Zúžiť panel' : 'Roztiahnuť panel';
@@ -1305,9 +1930,9 @@
     });
   }
 
-  // --- SVG Live Preview Generator With Custom Pixel Borders ---
+  // --- SVG Live Preview Generator With Custom Pixel Borders & Real Dimensions ---
   function generateTableSVG(sheet) {
-    const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
+    const range = getEffectiveExportRange(sheet);
     const colWidths = sheet.colWidths || {};
     const rowHeights = sheet.rowHeights || {};
 
@@ -1318,7 +1943,8 @@
     let totalW = 0;
     for (let c = sC; c <= eC; c++) {
       const colLetter = COLUMNS[c];
-      const w = colWidths[colLetter] || (colLetter === 'A' ? 220 : (colLetter === 'B' ? 110 : 70));
+      const thEl = gridTable ? gridTable.querySelector(`th.grid-header-col[data-col="${colLetter}"]`) : null;
+      const w = (thEl && thEl.offsetWidth > 0) ? thEl.offsetWidth : (colWidths[colLetter] || (colLetter === 'A' ? 220 : (colLetter === 'B' ? 110 : 70)));
       activeCols.push({ col: colLetter, width: w, x: totalW });
       totalW += w;
     }
@@ -1326,6 +1952,9 @@
     let totalH = 0;
     const rowPositions = [];
     for (let r = range.startRow; r <= range.endRow; r++) {
+      const trEl = gridTable ? gridTable.querySelector(`tbody tr:nth-child(${r})`) : null;
+      let baseH = (trEl && trEl.offsetHeight > 0) ? trEl.offsetHeight : (rowHeights[r] || (r === 2 ? 38 : 24));
+
       let maxCellPt = 11;
       let maxLines = 1;
       for (let c = sC; c <= eC; c++) {
@@ -1337,7 +1966,6 @@
       }
       const cellPx = Math.round(maxCellPt * 1.33);
       const neededH = Math.round(maxLines * (cellPx * 1.25) + 8);
-      const baseH = rowHeights[r] || (r === 2 ? 38 : 24);
       const h = Math.max(baseH, neededH);
       rowPositions.push({ row: r, y: totalH, height: h });
       totalH += h;

@@ -166,7 +166,160 @@ async function runVerification() {
   }
   await page.click('#btnToggleDrawerExpand');
 
-  // 12. Capture screenshot to verification file
+  // 12. Verify Soft-Dried-Papaya sheet exists
+  console.log('Verifying Soft-Dried-Papaya sheet presence...');
+  const activeSheetTab = (await page.textContent('.sheet-tab.active .sheet-tab-title')).trim();
+  console.log('Active Sheet Tab:', activeSheetTab);
+  if (!activeSheetTab.toLowerCase().includes('papaya')) {
+    throw new Error(`Expected active sheet to be Soft-Dried-Papaya, got "${activeSheetTab}"`);
+  }
+
+  // 13. Test Interactive Row and Column Resizing via Mouse Drag
+  console.log('Testing Row & Column Resizing via Mouse Drag...');
+  const initialRow1H = await page.evaluate(() => document.querySelector('tbody tr:nth-child(1)').offsetHeight);
+  const rowHandleBox = await page.locator('.row-resize-handle[data-row="1"]').boundingBox();
+  if (!rowHandleBox) throw new Error('Row resize handle for row 1 not found!');
+  
+  await page.mouse.move(rowHandleBox.x + rowHandleBox.width / 2, rowHandleBox.y + rowHandleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(rowHandleBox.x + rowHandleBox.width / 2, rowHandleBox.y + 25);
+  await page.mouse.up();
+
+  const newRow1H = await page.evaluate(() => document.querySelector('tbody tr:nth-child(1)').offsetHeight);
+  console.log(`Row 1 height: ${initialRow1H}px -> ${newRow1H}px`);
+  if (newRow1H <= initialRow1H) {
+    throw new Error(`Expected row 1 height to increase from ${initialRow1H}px, got ${newRow1H}px`);
+  }
+
+  // Column A resizing
+  const initialColAW = await page.evaluate(() => document.querySelector('th.grid-header-col[data-col="A"]').offsetWidth);
+  const colHandleBox = await page.locator('.col-resize-handle[data-col="A"]').boundingBox();
+  if (!colHandleBox) throw new Error('Col resize handle for col A not found!');
+
+  await page.mouse.move(colHandleBox.x + colHandleBox.width / 2, colHandleBox.y + colHandleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(colHandleBox.x + 30, colHandleBox.y + colHandleBox.height / 2);
+  await page.mouse.up();
+
+  const newColAW = await page.evaluate(() => document.querySelector('th.grid-header-col[data-col="A"]').offsetWidth);
+  console.log(`Col A width: ${initialColAW}px -> ${newColAW}px`);
+  if (newColAW <= initialColAW) {
+    throw new Error(`Expected col A width to increase from ${initialColAW}px, got ${newColAW}px`);
+  }
+
+  // 14. Test Undo and Redo
+  console.log('Testing Undo & Redo (Ctrl+Z and Ctrl+Y)...');
+  await page.click('td[data-addr="B1"]');
+  const initialWeight = await page.evaluate(() => document.querySelector('td[data-addr="B1"]').style.fontWeight);
+  console.log('Cell B1 font weight initial:', initialWeight);
+
+  // Toggle Bold
+  await page.click('#btnBold');
+  const toggledWeight = await page.evaluate(() => document.querySelector('td[data-addr="B1"]').style.fontWeight);
+  console.log('Cell B1 font weight after #btnBold click:', toggledWeight);
+  if (toggledWeight === initialWeight) {
+    throw new Error(`Bold toggle did not change font weight from ${initialWeight}!`);
+  }
+
+  // Click Undo
+  await page.click('#btnUndo');
+  const weightAfterUndo = await page.evaluate(() => document.querySelector('td[data-addr="B1"]').style.fontWeight);
+  console.log('Cell B1 font weight after Undo:', weightAfterUndo);
+  if (weightAfterUndo !== initialWeight) {
+    throw new Error(`Undo did not revert font weight to ${initialWeight}, got ${weightAfterUndo}!`);
+  }
+
+  // Click Redo
+  await page.click('#btnRedo');
+  const weightAfterRedo = await page.evaluate(() => document.querySelector('td[data-addr="B1"]').style.fontWeight);
+  console.log('Cell B1 font weight after Redo:', weightAfterRedo);
+  if (weightAfterRedo !== toggledWeight) {
+    throw new Error(`Redo did not reapply font weight to ${toggledWeight}, got ${weightAfterRedo}!`);
+  }
+
+  // Test Keyboard Ctrl+Z
+  await page.keyboard.press('Control+z');
+  const weightAfterCtrlZ = await page.evaluate(() => document.querySelector('td[data-addr="B1"]').style.fontWeight);
+  if (weightAfterCtrlZ !== initialWeight) {
+    throw new Error(`Ctrl+Z did not undo font weight to ${initialWeight}, got ${weightAfterCtrlZ}!`);
+  }
+
+  // 15. Test Print View Mode Toggle
+  console.log('Testing Print View Mode Toggle...');
+  await page.click('#btnTogglePrintView');
+  const isPrintActive = await page.evaluate(() => document.getElementById('spreadsheetArea').classList.contains('print-view-active'));
+  if (!isPrintActive) {
+    throw new Error('Spreadsheet area should have class "print-view-active" when Print View is toggled on!');
+  }
+  const hasInExportRange = await page.evaluate(() => document.querySelectorAll('td.in-export-range').length);
+  console.log(`Found ${hasInExportRange} cells marked as in-export-range in print view.`);
+  if (hasInExportRange === 0) {
+    throw new Error('Print view active should mark table cells with in-export-range!');
+  }
+  // Toggle off
+  await page.click('#btnTogglePrintView');
+  const isPrintActiveOff = await page.evaluate(() => document.getElementById('spreadsheetArea').classList.contains('print-view-active'));
+  if (isPrintActiveOff) {
+    throw new Error('Spreadsheet area should NOT have class "print-view-active" after toggling off!');
+  }
+
+  // 16. Test Excel HTML Paste with Format Preservation
+  console.log('Testing Excel HTML Paste...');
+  await page.click('td[data-addr="C10"]');
+  await page.evaluate(() => {
+    const excelHtml = `
+      <table style="border-collapse:collapse;">
+        <tr height="30">
+          <td style="font-weight:bold; font-size:12pt; color:#ff0000; background-color:#ffffcc; border:2px solid #0000ff; text-align:center;">Test Excel Produkt</td>
+          <td style="font-weight:bold; font-size:12pt; color:#008800; border:2px solid #0000ff; text-align:right;">100g</td>
+        </tr>
+      </table>
+    `;
+    const dt = new DataTransfer();
+    dt.setData('text/html', excelHtml);
+    const pasteEvent = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
+    window.dispatchEvent(pasteEvent);
+  });
+
+  const pastedC10Val = (await page.textContent('td[data-addr="C10"]')).trim();
+  const pastedC10Bg = await page.evaluate(() => document.querySelector('td[data-addr="C10"]').style.backgroundColor);
+  console.log(`Pasted cell C10: "${pastedC10Val}", bgColor: "${pastedC10Bg}"`);
+  if (pastedC10Val !== 'Test Excel Produkt') {
+    throw new Error(`Expected pasted text "Test Excel Produkt", got "${pastedC10Val}"`);
+  }
+
+  // 17. Verify Dynamic SVG Export Bounding Box
+  console.log('Verifying Dynamic SVG Export...');
+  const svgOutput = await page.evaluate(() => {
+    return document.querySelector('#previewSvgBox svg').outerHTML;
+  });
+  if (!svgOutput.includes('Test Excel Produkt')) {
+    throw new Error('SVG export preview does not dynamically contain pasted content outside A1:B8!');
+  }
+  console.log('Dynamic SVG accurately reflects visual cells without hardcoded preset clipping.');
+
+  // 18. Test Moving Table With Mouse Drag (relocation by border grab)
+  console.log('Testing Mouse Table Drag Relocation...');
+  const rangeBeforeMouseDrag = await page.textContent('#statusBarRange');
+  console.log('Range before mouse table drag:', rangeBeforeMouseDrag);
+
+  // Grab the top border of cell C10 (range-top border)
+  const freshC10 = await page.locator('td[data-addr="C10"]').boundingBox();
+  await page.mouse.move(freshC10.x + freshC10.width / 2, freshC10.y + 2);
+  await page.mouse.down();
+  // Drag down by 2 rows to C12
+  const targetC12 = await page.locator('td[data-addr="C12"]').boundingBox();
+  await page.mouse.move(targetC12.x + targetC12.width / 2, targetC12.y + targetC12.height / 2);
+  await page.mouse.up();
+
+  const rangeAfterMouseDrag = await page.textContent('#statusBarRange');
+  console.log('Range after mouse table drag:', rangeAfterMouseDrag);
+  if (!rangeAfterMouseDrag.includes('C12:D12')) {
+    throw new Error(`Expected range after mouse drag to be C12:D12, got "${rangeAfterMouseDrag}"`);
+  }
+  console.log('Mouse table drag relocation verified successfully.');
+
+  // 19. Capture screenshot to verification file
   await page.screenshot({ path: path.resolve(__dirname, '../verification-excel-ui.png') });
   console.log('Screenshot saved to verification-excel-ui.png');
 

@@ -12,6 +12,12 @@
   <header class="excel-titlebar">
     <div class="titlebar-left">
       <div class="excel-icon">X</div>
+      <button class="titlebar-tool-btn" id="btnTitleUndo" title="Krok späť (Ctrl+Z)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"></path><path d="M3 13a9 9 0 0 1 15.36-6.36L21 9"></path></svg>
+      </button>
+      <button class="titlebar-tool-btn" id="btnTitleRedo" title="Krok dopredu (Ctrl+Y)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"></path><path d="M21 13a9 9 0 0 0-15.36-6.36L3 9"></path></svg>
+      </button>
       <span class="file-title">Výživové údaje – Tabuľkový editor</span>
       <div class="auto-save-pill">Automatické ukladanie</div>
     </div>
@@ -297,32 +303,44 @@
       <div class="ribbon-group-title">Posun tabuľky</div>
     </div>
 
-    <!-- Skupina Úpravy -->
+    <!-- Skupina Úpravy & História -->
     <div class="ribbon-group">
       <div class="ribbon-group-content">
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-compact" id="btnUndo" title="Krok späť (Ctrl+Z)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 7v6h6"></path><path d="M3 13a9 9 0 0 1 15.36-6.36L21 9"></path></svg>
+            <span>Späť</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-compact" id="btnRedo" title="Krok dopredu (Ctrl+Y)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 7v6h-6"></path><path d="M21 13a9 9 0 0 0-15.36-6.36L3 9"></path></svg>
+            <span>Dopredu</span>
+          </button>
+        </div>
         <div class="ribbon-row">
           <button class="ribbon-btn ribbon-btn-compact" id="btnClearContent" title="Vymaže text v označených bunkách (kláves Delete)">
             <span>Zmazať text</span>
           </button>
-        </div>
-        <div class="ribbon-row">
           <button class="ribbon-btn ribbon-btn-compact" id="btnClearFormat" title="Odstráni formátovanie a orámovanie z výberu">
             <span>Zmazať formát</span>
           </button>
         </div>
       </div>
-      <div class="ribbon-group-title">Úpravy</div>
+      <div class="ribbon-group-title">Úpravy & História</div>
     </div>
 
-    <!-- Skupina Oblasť exportu -->
+    <!-- Skupina Oblasť exportu & Tlač -->
     <div class="ribbon-group">
-      <div class="ribbon-group-content">
+      <div class="ribbon-group-content" style="flex-direction: row; gap: 4px;">
         <button class="ribbon-btn ribbon-btn-lg" id="btnSetExportRange" title="Nastaví aktuálne vybrané bunky ako oblasť pre export tabuľky">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
           <span>Nastaviť oblasť</span>
         </button>
+        <button class="ribbon-btn ribbon-btn-lg" id="btnTogglePrintView" title="Prepnúť zobrazenie pre tlač (Zvýrazní presnú tlačovú oblasť a rozmery)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <span>Tlačový náhľad</span>
+        </button>
       </div>
-      <div class="ribbon-group-title">Oblasť exportu</div>
+      <div class="ribbon-group-title">Oblasť & Tlač</div>
     </div>
 
     <!-- Skupina Export v Ultra HD kvalite & Súbory -->
@@ -405,6 +423,7 @@
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="preview-bg-btn active" id="btnBgWhite" title="Biele pozadie">Biele</button>
           <button class="preview-bg-btn" id="btnBgCheck" title="Šachovnicové pozadie pre priehľadnosť">Šachovnica</button>
+          <button class="preview-bg-btn" id="btnTogglePrintGuides" title="Zobraziť vodidlá tlače a rozmery v mm">Rozmery tlače</button>
         </div>
       </div>
 
