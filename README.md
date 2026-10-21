@@ -1,63 +1,48 @@
-# Generátor výživových tabuliek pre obaly a tlač (Avery)
+# 📗 Výživové tabuľky – Excel pre Avery
 
-Jednoduchá, rýchla a **100 % offline webová aplikácia** vytvorená na mieru pre tvorbu, detailnú úpravu a export výživových tabuliek na etikety a obaly potravín (napr. sušené ovocie, doplnky výživy).
-
----
-
-## 🚀 Ako aplikáciu spustiť (jediným kliknutím)
-
-1. Dvakrát kliknite na súbor **`Spustiť-Aplikáciu.bat`** (alebo priamo otvorte **`index.html`**).
-2. Aplikácia sa okamžite otvorí v prehliadači (Chrome, Edge, Firefox).
-3. **Nevyžaduje žiadny internet, žiadnu inštaláciu ani žiadne administrátorské práva.**
+Aplikácia vytvorená na mieru pre vášho otca, ktorá **vyzerá a správa sa presne ako Microsoft Excel**, ale priamo rieši export do softvéru Avery pre tlač etikiet potravín.
 
 ---
 
-## ✨ Hlavné funkcie a možnosti
-
-### 1. Práca so záložkami produktov (ako v Exceli)
-- Na hornom paneli vidíte záložky pre jednotlivé produkty (*Soft-Dried-Papaya*, *Dried-Mango*, *Soft-Dried-PassionFruit*, *Mixed-Dried-TropicalFruits*).
-- Kliknutím na záložku prepnete produkt.
-- Tlačidlom `+ Nový produkt` pridáte ďalší produkt do zoznamu.
-- Ikonou ✏️ môžete produkt premenovať, ikonou 📄 ho duplikovať a krížikom ✕ zmazať.
-- **Všetky zmeny sa automaticky ukladajú do pamäte prehliadača**, takže pri zatvorení okna o nič neprídete.
-
-### 2. Import existujúceho Excelu (.xlsx / .xls)
-- Kliknite na tlačidlo **„Nahrať Excel (.xlsx)“** vpravo hore, alebo **jednoducho potiahnite súbor z plochy myšou priamo do okna aplikácie**.
-- Aplikácia automaticky prečíta všetky hárky zo zošita a pre každý vytvorí vlastnú záložku s presnými hodnotami a odsadeniami!
-
-### 3. Voľnosť orámovania a riadkovania ako v Exceli
-- **Pre celú tabuľku:**
-  - Hrúbka vonkajšieho rámu (žiadny, tenký, stredný 1.5px, hrubý 2.5px, extra hrubý).
-  - Zvislá deliaca čiara medzi názvom a hodnotami (zapnutá / skrytá).
-  - Spodná čiara pod hlavičkou (žiadna, tenká, hrubá, dvojitá).
-  - Nastaviteľná šírka tabuľky, pomer stĺpcov a výška riadkov.
-  - Výber písma (Calibri, Arial, Segoe UI, Times New Roman) a plynulá zmena veľkosti textu.
-- **Pre každý riadok samostatne:**
-  - **Spodná linka riadku:** voľba *Bez čiary*, *Tenká čiara*, *Hrubá čiara*, *Dvojitá čiara*.
-  - **Odsadenie (Indent):** tlačidlo *Odsadiť* pre podpoložky ako *„z toho cukry“* alebo *„z toho nasýtené mastné kyseliny“*.
-  - **Tučné písmo (Bold):** tlačidlo *B*.
-  - **Dvojriadkové texty:** v políčku hodnoty (napr. pri energetickej hodnote) stačí stlačiť `Enter` pre zalomenie riadku:
-    ```
-    1372kJ /
-    328kcal
-    ```
-
-### 4. Export a vkladanie do Avery (1-klikový prenos)
-- **Zelené tlačidlo „Kopírovať do schránky (Avery)“:**
-  - Jedným klikom vygeneruje ostrý obrázok priamo do schránky Windows.
-  - Otvorte softvér Avery a stlačte klávesovú skratku **`Ctrl + V`**. Hotovo!
-- **Tlačidlo „Stiahnuť SVG (Vektor)“:**
-  - Stiahne 100 % čisté vektorové SVG. V Avery ho môžete roztiahnuť na akúkoľvek veľkosť (aj veľké plátno) a písmo zostane dokonale ostré bez rozmazania.
-- **Tlačidlá „Stiahnuť PNG“ a „Stiahnuť JPG“:**
-  - Uloží obrázok v tlačovej kvalite **300 DPI** (alebo až 600 DPI podľa nastavenia).
-  - Možnosť voľby priehľadného pozadia (Transparent PNG) alebo bieleho pozadia.
+## 🚀 Ako aplikáciu spustiť:
+- Dvakrát kliknite na **`Spustiť-Aplikáciu.bat`** (alebo priamo otvorte **`index.html`**).
+- Aplikácia sa okamžite otvorí v prehliadači (Chrome, Edge, Firefox).
+- **100 % offline – funguje bez internetu, bez inštalácie čohokoľvek.**
 
 ---
 
-## 🧪 Automatizované testy
+## 🌟 Prečo vyzerá a funguje presne ako Excel:
 
-Všetky výpočty, SVG generovanie, parsovanie Excelu a exporty sú pokryté testami v `tests/`:
-```bash
-node --test tests/*.test.js
-```
-Všetkých 11 testov prechádza na 100 %.
+1. **Zelená Excel hlavička a pás kariet (Ribbon):**
+   - Známe prostredie Excelu, na ktoré je otec zvyknutý.
+   - Písmo: výber fontu (*Calibri*, *Arial*), veľkosti (11, 12, 14), tučné písmo (**B**), kurzíva (*I*).
+   - **Tlačidlo orámovania s ponukou ako v Exceli:**
+     - *Všetky orámovania*
+     - *Hrubé vonkajšie orámovanie*
+     - *Hrubá čiara pod hlavičkou*
+     - *Hrubé dolné orámovanie*
+     - *Dvojité dolné orámovanie*
+     - *Žiadne orámovanie*
+   - Zarovnanie textu: vľavo, na stred, vpravo.
+   - **Tlačidlá odsadenia (`→| Odsadiť`):** okamžité odsadenie pre podpoložky (*„z toho nasýtené mastné kyseliny“*, *„z toho cukry“*).
+2. **Skutočná tabuľka buniek (A1, B1, C1...):**
+   - Kliknite na ľubovoľnú bunku a rovno píšte!
+   - K dispozícii je aj **riadok vzorcov (`fx`)** hore.
+   - Pri viacriadkovom texte (napríklad `1372kJ /` a `328kcal`) stačí stlačiť `Enter`.
+   - Šírku stĺpcov `A` a `B` môžete ľubovoľne meniť potiahnutím deliacej čiary medzi stĺpcami hore v hlavičke!
+3. **Záložky hárkov DOLE (ako v Exceli):**
+   - V spodnej lište sú záložky pre jednotlivé produkty:
+     `[ Soft-Dried-Papaya ] [ Dried-Mango ] [ Soft-Dried-PassionFruit ] [ Mixed-Dried-TropicalFruits ] [+]`
+   - Kliknutím prepínate produkty.
+   - Dvojklikom na názov záložky ju môžete premenovať.
+   - Tlačidlom `+` vytvoríte nový hárok/produkt.
+4. **1-klikový prenos a export do Avery:**
+   - **Veľké tlačidlo „Kopírovať pre Avery“:**
+     - Vygeneruje obrázok vo vysokej tlačovej kvalite (300 DPI) priamo do schránky Windows.
+     - V softvéri Avery stačí stlačiť **`Ctrl + V`** a tabuľka je na etikete!
+   - **Tlačidlo „Stiahnuť SVG“:**
+     - Skutočné vektorové SVG – v Avery ho môžete roztiahnuť na akýkoľvek rozmer a písmo zostane dokonale ostré ako britva.
+   - **Tlačidlo „Stiahnuť PNG“:**
+     - Uloží obrázok v tlačovej kvalite 300 DPI.
+   - **Tlačidlo „Nahrať Excel“:**
+     - Umožní otcovi nahrať jeho existujúci `.xlsx` súbor a okamžite z neho načítať všetky hárky.
