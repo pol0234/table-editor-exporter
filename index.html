@@ -20,49 +20,76 @@
     </div>
   </header>
 
-  <!-- 2. EXCEL PÁS NÁSTROJOV (RIBBON TOOLBAR) -->
+  <!-- 2. EXCEL PÁS NÁSTROJOV (RIBBON TOOLBAR S PREFEKTNÝM ZAROVNANÍM) -->
   <div class="excel-ribbon-toolbar">
     
     <!-- Skupina Kopírovanie (Hlavná akcia) -->
     <div class="ribbon-group">
-      <button class="ribbon-btn ribbon-btn-lg ribbon-btn-primary" id="btnCopyAvery" title="Skopíruje ostrý obrázok tabuľky priamo do schránky (vloženie cez Ctrl+V)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        <span>Kopírovať</span>
-      </button>
+      <div class="ribbon-group-content">
+        <button class="ribbon-btn ribbon-btn-lg ribbon-btn-primary" id="btnCopyAvery" title="Skopíruje ostrý obrázok tabuľky v najvyššej kvalite priamo do schránky (vloženie cez Ctrl+V)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span>Kopírovať</span>
+        </button>
+      </div>
       <div class="ribbon-group-title">Kopírovanie</div>
     </div>
 
     <!-- Skupina Písmo & Farby -->
     <div class="ribbon-group">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; gap: 4px;">
-          <select id="ribbonFontFamily" class="ribbon-select" style="width: 100px;">
+      <div class="ribbon-group-content">
+        <div class="ribbon-row">
+          <select id="ribbonFontFamily" class="ribbon-select" style="width: 100px;" title="Výber písma (font)">
             <option value="Calibri" selected>Calibri</option>
             <option value="Arial">Arial</option>
             <option value="Segoe UI">Segoe UI</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Trebuchet MS">Trebuchet MS</option>
+            <option value="Tahoma">Tahoma</option>
           </select>
-          <select id="ribbonFontSize" class="ribbon-select" style="width: 50px;">
+          <select id="ribbonFontSize" class="ribbon-select" style="width: 52px;" title="Veľkosť písma (pt)">
+            <option value="8">8</option>
             <option value="9">9</option>
             <option value="10">10</option>
             <option value="11" selected>11</option>
             <option value="12">12</option>
             <option value="14">14</option>
             <option value="16">16</option>
+            <option value="18">18</option>
+            <option value="20">20</option>
+            <option value="22">22</option>
+            <option value="24">24</option>
+            <option value="28">28</option>
+            <option value="32">32</option>
+            <option value="36">36</option>
+            <option value="48">48</option>
           </select>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnFontInc" title="Zväčšiť veľkosť písma">
+            <span style="font-weight: 700; font-size: 0.8rem;">A▲</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnFontDec" title="Zmenšiť veľkosť písma">
+            <span style="font-weight: 600; font-size: 0.72rem;">A▼</span>
+          </button>
         </div>
-        <div style="display: flex; gap: 3px; align-items: center;">
-          <button class="ribbon-btn" id="btnBold" title="Tučné písmo (Bold)"><strong>B</strong></button>
-          <button class="ribbon-btn" id="btnItalic" title="Kurzíva (Italic)"><em>I</em></button>
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnBold" title="Tučné písmo (Bold)"><strong>B</strong></button>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnItalic" title="Kurzíva (Italic)"><em>I</em></button>
           
-          <!-- Farba textu -->
-          <label class="ribbon-color-btn" title="Farba písma">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="6" y="16" font-size="16" font-weight="bold" fill="currentColor">A</text><line x1="4" y1="20" x2="20" y2="20" stroke-width="3"></line></svg>
+          <!-- Autentická Excel ikonka: Písmeno A s dynamickým farebným pruhom -->
+          <label class="ribbon-color-btn" id="lblTextColor" title="Farba písma">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path d="M5 17L10.5 4h3L19 17h-2.6l-1.4-3.6H9L7.6 17H5zm4.8-5.8h4.4L12 6.6h-.2l-2 4.6z" fill="#201f1e"/>
+              <rect id="textColorBar" x="3" y="19" width="18" height="3" rx="1" fill="#000000"/>
+            </svg>
             <input type="color" id="ribbonTextColor" value="#000000">
           </label>
 
-          <!-- Farba výplne bunky -->
-          <label class="ribbon-color-btn" title="Farba výplne (podfarbenie bunky)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11l-8-8-8.5 8.5a2.12 2.12 0 0 0 0 3l5.5 5.5a2.12 2.12 0 0 0 3 0L19 11z"></path><path d="M5 21h14"></path></svg>
+          <!-- Autentická Excel ikonka: Vedierko s farbou -->
+          <label class="ribbon-color-btn" id="lblFillColor" title="Farba výplne (podfarbenie bunky)">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path d="M19.3 11.7l-8-8a1 1 0 0 0-1.4 0l-5.6 5.6a1 1 0 0 0 0 1.4l8 8a1 1 0 0 0 1.4 0l5.6-5.6a1 1 0 0 0 0-1.4zM7.1 10L11.3 5.8l6.9 6.9-4.2 4.2-6.9-6.9z" fill="#201f1e"/>
+              <rect id="fillColorBar" x="3" y="19" width="18" height="3" rx="1" fill="#ffffff"/>
+            </svg>
             <input type="color" id="ribbonFillColor" value="#ffffff">
           </label>
         </div>
@@ -70,10 +97,36 @@
       <div class="ribbon-group-title">Písmo & farba</div>
     </div>
 
+    <!-- Skupina Zarovnanie a Odsadenie -->
+    <div class="ribbon-group">
+      <div class="ribbon-group-content">
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnAlignLeft" title="Zarovnať vľavo">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+          </button>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnAlignCenter" title="Zarovnať na stred">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
+          </button>
+          <button class="ribbon-btn ribbon-btn-icon-sq" id="btnAlignRight" title="Zarovnať vpravo">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-compact" id="btnIndentInc" title="Odsadiť doprava (napr. z toho cukry)">
+            <span>→| Odsadiť</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-compact" id="btnIndentDec" title="Zmenšiť odsadenie">
+            <span>|←</span>
+          </button>
+        </div>
+      </div>
+      <div class="ribbon-group-title">Zarovnanie</div>
+    </div>
+
     <!-- Skupina Orámovanie (S nastavením pixelov a vnútorných/vonkajších hraníc) -->
     <div class="ribbon-group">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; gap: 4px; align-items: center;">
+      <div class="ribbon-group-content">
+        <div class="ribbon-row">
           <!-- Dropdown orámovania -->
           <div class="border-dropdown-wrapper">
             <button class="ribbon-btn" id="btnBorderDropdown" title="Použiť orámovanie na vybrané bunky">
@@ -142,14 +195,14 @@
           </div>
 
           <!-- Nastavenie pixelov pre orámovanie -->
-          <div class="ribbon-input-group" title="Hrúbka orámovania v pixeloch (aplikuje sa na vybrané čiary)">
+          <div class="ribbon-input-group" title="Hrúbka orámovania v pixeloch (aplikuje sa na vybrané orámovanie)">
             <span class="ribbon-label">Hrúbka:</span>
             <input type="number" id="borderWidthInput" class="ribbon-num-input" value="1" min="1" max="8" step="1">
             <span class="ribbon-unit">px</span>
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; align-items: center;">
+        <div class="ribbon-row">
           <!-- Výber štýlu čiary -->
           <select id="borderStyleSelect" class="ribbon-select" style="width: 82px;" title="Štýl čiary">
             <option value="solid" selected>Plná</option>
@@ -160,7 +213,7 @@
 
           <!-- Výber farby orámovania -->
           <label class="ribbon-color-btn" title="Farba orámovania">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12" stroke-width="3"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line></svg>
             <input type="color" id="borderColorPicker" value="#000000">
           </label>
         </div>
@@ -168,87 +221,133 @@
       <div class="ribbon-group-title">Orámovanie (px)</div>
     </div>
 
-    <!-- Skupina Zarovnanie a Odsadenie -->
+    <!-- Skupina Riadky & Stĺpce (Krásne profesionálne ikony) -->
     <div class="ribbon-group">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn" id="btnAlignLeft" title="Zarovnať vľavo">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+      <div class="ribbon-group-content">
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-icon" id="btnInsertRow" title="Vložiť nový riadok nad vybranú bunku">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="11" width="18" height="8" rx="1.5" stroke="#444" stroke-width="1.8" fill="#f4f4f4"/>
+              <line x1="3" y1="15" x2="21" y2="15" stroke="#aaa" stroke-width="1"/>
+              <circle cx="7" cy="6" r="5" fill="#107c41"/>
+              <line x1="7" y1="3.5" x2="7" y2="8.5" stroke="#fff" stroke-width="1.8"/>
+              <line x1="4.5" y1="6" x2="9.5" y2="6" stroke="#fff" stroke-width="1.8"/>
+            </svg>
+            <span>+ Riadok</span>
           </button>
-          <button class="ribbon-btn" id="btnAlignCenter" title="Zarovnať na stred">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
-          </button>
-          <button class="ribbon-btn" id="btnAlignRight" title="Zarovnať vpravo">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+          <button class="ribbon-btn ribbon-btn-icon" id="btnDeleteRow" title="Zmazať vybraný riadok">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="11" width="18" height="8" rx="1.5" stroke="#444" stroke-width="1.8" fill="#f4f4f4"/>
+              <line x1="3" y1="15" x2="21" y2="15" stroke="#aaa" stroke-width="1"/>
+              <circle cx="7" cy="6" r="5" fill="#d13438"/>
+              <line x1="4.5" y1="6" x2="9.5" y2="6" stroke="#fff" stroke-width="1.8"/>
+            </svg>
+            <span>− Riadok</span>
           </button>
         </div>
-        <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn" id="btnIndentInc" title="Odsadiť doprava (napr. z toho cukry)">
-            <span style="font-size: 0.78rem;">→| Odsadiť</span>
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-icon" id="btnInsertCol" title="Vložiť nový stĺpec naľavo">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <rect x="11" y="3" width="8" height="18" rx="1.5" stroke="#444" stroke-width="1.8" fill="#f4f4f4"/>
+              <line x1="15" y1="3" x2="15" y2="21" stroke="#aaa" stroke-width="1"/>
+              <circle cx="6" cy="7" r="5" fill="#107c41"/>
+              <line x1="6" y1="4.5" x2="6" y2="9.5" stroke="#fff" stroke-width="1.8"/>
+              <line x1="3.5" y1="7" x2="8.5" y2="7" stroke="#fff" stroke-width="1.8"/>
+            </svg>
+            <span>+ Stĺpec</span>
           </button>
-          <button class="ribbon-btn" id="btnIndentDec" title="Zmenšiť odsadenie">
-            <span style="font-size: 0.78rem;">|←</span>
+          <button class="ribbon-btn ribbon-btn-icon" id="btnDeleteCol" title="Zmazať vybraný stĺpec">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <rect x="11" y="3" width="8" height="18" rx="1.5" stroke="#444" stroke-width="1.8" fill="#f4f4f4"/>
+              <line x1="15" y1="3" x2="15" y2="21" stroke="#aaa" stroke-width="1"/>
+              <circle cx="6" cy="7" r="5" fill="#d13438"/>
+              <line x1="3.5" y1="7" x2="8.5" y2="7" stroke="#fff" stroke-width="1.8"/>
+            </svg>
+            <span>− Stĺpec</span>
           </button>
-        </div>
-      </div>
-      <div class="ribbon-group-title">Zarovnanie</div>
-    </div>
-
-    <!-- Skupina Riadky & Stĺpce (Manipulácia) -->
-    <div class="ribbon-group">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn ribbon-btn-sm" id="btnInsertRow" title="Vložiť nový riadok nad označený riadok">+ Riadok</button>
-          <button class="ribbon-btn ribbon-btn-sm" id="btnDeleteRow" title="Zmazať označený riadok">− Riadok</button>
-        </div>
-        <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn ribbon-btn-sm" id="btnInsertCol" title="Vložiť nový stĺpec naľavo">+ Stĺpec</button>
-          <button class="ribbon-btn ribbon-btn-sm" id="btnDeleteCol" title="Zmazať označený stĺpec">− Stĺpec</button>
         </div>
       </div>
       <div class="ribbon-group-title">Riadky & stĺpce</div>
     </div>
 
-    <!-- Skupina Úpravy & Vzory -->
+    <!-- Skupina Posun tabuľky (Presunúť celú tabuľku kdekoľvek po ploche) -->
     <div class="ribbon-group">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn ribbon-btn-sm" id="btnClearContent" title="Vymaže text v označených bunkách (kláves Delete)">Zmazať text</button>
-          <button class="ribbon-btn ribbon-btn-sm" id="btnClearFormat" title="Odstráni formátovanie a orámovanie z výberu">Zmazať formát</button>
+      <div class="ribbon-group-content">
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-icon" id="btnMoveUp" title="Posunúť tabuľku o 1 riadok hore">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            <span>Hore</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-icon" id="btnMoveDown" title="Posunúť tabuľku o 1 riadok dole">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <span>Dole</span>
+          </button>
         </div>
-        <div>
-          <button class="ribbon-btn ribbon-btn-sm" id="btnInsertNutritionTemplate" style="width: 100%;" title="Vloží predpripravenú štandardnú tabuľku výživových údajov (EÚ 1169/2011)">Vzor EÚ údajov</button>
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-icon" id="btnMoveLeft" title="Posunúť tabuľku o 1 stĺpec vľavo">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Vľavo</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-icon" id="btnMoveRight" title="Posunúť tabuľku o 1 stĺpec vpravo">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"></polyline></svg>
+            <span>Vpravo</span>
+          </button>
         </div>
       </div>
-      <div class="ribbon-group-title">Úprava údajov</div>
+      <div class="ribbon-group-title">Posun tabuľky</div>
+    </div>
+
+    <!-- Skupina Úpravy -->
+    <div class="ribbon-group">
+      <div class="ribbon-group-content">
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-compact" id="btnClearContent" title="Vymaže text v označených bunkách (kláves Delete)">
+            <span>Zmazať text</span>
+          </button>
+        </div>
+        <div class="ribbon-row">
+          <button class="ribbon-btn ribbon-btn-compact" id="btnClearFormat" title="Odstráni formátovanie a orámovanie z výberu">
+            <span>Zmazať formát</span>
+          </button>
+        </div>
+      </div>
+      <div class="ribbon-group-title">Úpravy</div>
     </div>
 
     <!-- Skupina Oblasť exportu -->
     <div class="ribbon-group">
-      <button class="ribbon-btn ribbon-btn-lg" id="btnSetExportRange" title="Nastaví aktuálne vybrané bunky ako oblasť pre export tabuľky">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
-        <span>Nastaviť oblasť</span>
-      </button>
+      <div class="ribbon-group-content">
+        <button class="ribbon-btn ribbon-btn-lg" id="btnSetExportRange" title="Nastaví aktuálne vybrané bunky ako oblasť pre export tabuľky">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
+          <span>Nastaviť oblasť</span>
+        </button>
+      </div>
       <div class="ribbon-group-title">Oblasť exportu</div>
     </div>
 
-    <!-- Skupina Export a Súbory -->
+    <!-- Skupina Export v Ultra HD kvalite & Súbory -->
     <div class="ribbon-group" style="border-right: none;">
-      <button class="ribbon-btn ribbon-btn-lg" id="btnExportSvg" title="Stiahne čistý vektorový SVG súbor (neobmedzene zväčšiteľné)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-        <span>Stiahnuť SVG</span>
-      </button>
-      <button class="ribbon-btn ribbon-btn-lg" id="btnExportPng" title="Stiahne PNG obrázok vo vysokej tlačovej kvalite (300 DPI)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-        <span>Stiahnuť PNG</span>
-      </button>
-      
-      <input type="file" id="excelFilePicker" accept=".xlsx, .xls, .csv" style="display: none;">
-      <button class="ribbon-btn ribbon-btn-lg" id="btnUploadExcel" title="Nahrať existujúci zošit z Excelu (.xlsx)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <span>Nahrať Excel</span>
-      </button>
-      <div class="ribbon-group-title">Súbor & Export</div>
+      <div class="ribbon-group-content" style="flex-direction: row; gap: 4px;">
+        <button class="ribbon-btn ribbon-btn-lg" id="btnExportSvg" title="Stiahne čistý vektorový SVG súbor (neobmedzene zväčšiteľné bez straty kvality)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+          <span>SVG Vektor</span>
+        </button>
+        <button class="ribbon-btn ribbon-btn-lg" id="btnExportPng" title="Stiahne PNG obrázok v najvyššej možnej kvalite (Ultra HD 600 DPI, ostré aj pri extrémnom zväčšení)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          <span>PNG (600 DPI)</span>
+        </button>
+        <button class="ribbon-btn ribbon-btn-lg" id="btnExportJpg" title="Stiahne JPG obrázok v najvyššej možnej kvalite (Ultra HD 600 DPI s bielym pozadím)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 16l4-5 3 4 5-6 2 3"></path></svg>
+          <span>JPG (600 DPI)</span>
+        </button>
+        
+        <input type="file" id="excelFilePicker" accept=".xlsx, .xls, .csv" style="display: none;">
+        <button class="ribbon-btn ribbon-btn-lg" id="btnUploadExcel" title="Nahrať existujúci zošit z Excelu (.xlsx)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Nahrať</span>
+        </button>
+      </div>
+      <div class="ribbon-group-title">Export & Súbory</div>
     </div>
 
   </div>
@@ -257,8 +356,8 @@
   <div class="excel-formula-bar">
     <div class="formula-name-box" id="formulaCellAddr">A1</div>
     <div class="formula-icons">
-      <span>✕</span>
-      <span>✓</span>
+      <span title="Zrušiť"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d83b01" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+      <span title="Potvrdiť"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#107c41" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
       <span>fx</span>
     </div>
     <input type="text" class="formula-input" id="formulaInput" placeholder="Hodnota bunky...">
@@ -322,7 +421,8 @@
         </button>
         <div class="avery-sub-btn-group">
           <button class="avery-sub-btn" onclick="document.getElementById('btnExportSvg').click();">Uložiť SVG (Vektor)</button>
-          <button class="avery-sub-btn" onclick="document.getElementById('btnExportPng').click();">Uložiť PNG (300 DPI)</button>
+          <button class="avery-sub-btn" onclick="document.getElementById('btnExportPng').click();">Uložiť PNG (600 DPI)</button>
+          <button class="avery-sub-btn" onclick="document.getElementById('btnExportJpg').click();">Uložiť JPG (600 DPI)</button>
         </div>
       </div>
     </aside>

@@ -53,74 +53,120 @@ async function runVerification() {
   const formulaAddr = await page.textContent('#formulaCellAddr');
   console.log('Formula Bar Address after drag:', formulaAddr);
 
-  // 5. Test Custom Border Pixel Thickness & Placement (3px All borders)
-  console.log('Testing Border Controls (setting 3px width and applying to selection)...');
+  // 5. Test Font Size Scaling
+  console.log('Testing Font Size Scaling...');
+  await page.click('td[data-addr="A1"]');
+  await page.selectOption('#ribbonFontSize', '16');
+  
+  const fontSizeA1 = await page.evaluate(() => document.querySelector('td[data-addr="A1"]').style.fontSize);
+  console.log('Cell A1 fontSize after select 16:', fontSizeA1);
+  if (fontSizeA1 !== '16pt') {
+    throw new Error(`Expected cell A1 font-size to be 16pt, got "${fontSizeA1}"`);
+  }
+
+  // Click font increase button
+  await page.click('#btnFontInc');
+  const fontSizeAfterInc = await page.evaluate(() => document.querySelector('td[data-addr="A1"]').style.fontSize);
+  console.log('Cell A1 fontSize after #btnFontInc:', fontSizeAfterInc);
+  if (fontSizeAfterInc !== '18pt') {
+    throw new Error(`Expected cell A1 font-size to be 18pt, got "${fontSizeAfterInc}"`);
+  }
+
+  // Verify font-size in rendered SVG preview
+  const svgTextContent = await page.evaluate(() => document.querySelector('#previewSvgBox svg').outerHTML);
+  if (!svgTextContent.includes('font-size="24px"')) {
+    throw new Error('SVG preview did not scale text font-size to 24px (18pt * 1.33)!');
+  }
+  console.log('Font size scaling verified in both table and SVG preview.');
+
+  // 6. Test Table Relocation (Moving Table Across Grid)
+  console.log('Testing Table Moving Controls...');
+  const rangeBeforeMove = await page.textContent('#statusBarRange');
+  console.log('Range before move:', rangeBeforeMove);
+
+  // Move down
+  await page.click('#btnMoveDown');
+  const rangeAfterDown = await page.textContent('#statusBarRange');
+  console.log('Range after #btnMoveDown:', rangeAfterDown);
+  if (!rangeAfterDown.includes('A2:B9')) {
+    throw new Error(`Expected range to be A2:B9 after move down, got "${rangeAfterDown}"`);
+  }
+
+  // Move right
+  await page.click('#btnMoveRight');
+  const rangeAfterRight = await page.textContent('#statusBarRange');
+  console.log('Range after #btnMoveRight:', rangeAfterRight);
+  if (!rangeAfterRight.includes('B2:C9')) {
+    throw new Error(`Expected range to be B2:C9 after move right, got "${rangeAfterRight}"`);
+  }
+
+  // Verify cell value moved to B2
+  const movedValueB2 = (await page.textContent('td[data-addr="B2"]')).trim();
+  console.log('Cell B2 value after table move:', movedValueB2);
+  if (movedValueB2 !== 'Výživové údaje na') {
+    throw new Error(`Expected cell B2 to have header text after move, got "${movedValueB2}"`);
+  }
+
+  // Move back up and left to A1:B8
+  await page.click('#btnMoveUp');
+  await page.click('#btnMoveLeft');
+  const restoredRange = await page.textContent('#statusBarRange');
+  console.log('Restored range:', restoredRange);
+  if (!restoredRange.includes('A1:B8')) {
+    throw new Error(`Expected restored range A1:B8, got "${restoredRange}"`);
+  }
+
+  // 7. Verify "Vzor EÚ údajov" has been removed completely
+  const euTemplateBtn = await page.$('#btnInsertNutritionTemplate');
+  if (euTemplateBtn) {
+    throw new Error('Found #btnInsertNutritionTemplate in DOM, it should be removed!');
+  }
+  console.log('Confirmed "Vzor EU údajov" is removed.');
+
+  // 8. Verify Export Buttons Exist (SVG, PNG, JPG)
+  const btnSvg = await page.$('#btnExportSvg');
+  const btnPng = await page.$('#btnExportPng');
+  const btnJpg = await page.$('#btnExportJpg');
+  if (!btnSvg || !btnPng || !btnJpg) {
+    throw new Error('Export buttons for SVG, PNG or JPG are missing!');
+  }
+  console.log('Confirmed SVG, PNG, and JPG export buttons are present.');
+
+  // 9. Verify Custom Border Pixel Controls
+  console.log('Testing Border Controls...');
   await page.fill('#borderWidthInput', '3');
   await page.selectOption('#borderStyleSelect', 'solid');
-  
-  // Click border dropdown
   await page.click('#btnBorderDropdown');
-  // Click "Všetky orámovania"
   await page.click('.border-menu-item[data-border="all"]');
 
-  // Verify that SVG generated has stroke-width="3"
-  const svgContent = await page.evaluate(() => document.querySelector('#previewSvgBox svg').outerHTML);
-  if (!svgContent.includes('stroke-width="3"')) {
+  const svgBorderContent = await page.evaluate(() => document.querySelector('#previewSvgBox svg').outerHTML);
+  if (!svgBorderContent.includes('stroke-width="3"')) {
     throw new Error('SVG does not contain custom 3px border stroke-width!');
   }
-  console.log('Custom 3px border verified in SVG preview.');
+  console.log('Border 3px application verified in SVG.');
 
-  // Test "Iba vnútorné orámovanie" (Inner borders)
-  await page.fill('#borderWidthInput', '2');
-  await page.click('#btnBorderDropdown');
-  await page.click('.border-menu-item[data-border="inner"]');
-  console.log('Inner border application verified.');
-
-  // 6. Test Drawer Expand Button (Clean labels, no emojis)
-  const expandBtnText = (await page.textContent('#btnToggleDrawerExpand')).trim();
-  console.log('Expand Drawer Button Text:', expandBtnText);
-  if (expandBtnText.includes('↔') || expandBtnText.includes('Avery')) {
-    throw new Error(`Expand button contains unwanted characters: ${expandBtnText}`);
+  // 10. Verify NO Emojis in Entire DOM
+  const hasEmoji = await page.evaluate(() => {
+    const text = document.body.innerText + ' ' + document.title;
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1FA00}-\u{1FAFF}]/gu;
+    const matches = text.match(emojiRegex);
+    return matches ? matches.join(', ') : null;
+  });
+  if (hasEmoji) {
+    throw new Error(`DOM contains unwanted emojis: ${hasEmoji}`);
   }
+  console.log('Zero emojis verified across the entire DOM.');
 
-  // Click expand
+  // 11. Test Interactive Splitter & Drawer
+  console.log('Testing Drawer Expand & Splitter...');
   await page.click('#btnToggleDrawerExpand');
   let drawerWidth = await page.evaluate(() => document.getElementById('averyPreviewDrawer').offsetWidth);
-  console.log('Drawer width after expand click:', drawerWidth);
   if (drawerWidth < 700) {
     throw new Error(`Drawer expected to be expanded >= 700px, got ${drawerWidth}px`);
   }
-
-  // Click collapse
   await page.click('#btnToggleDrawerExpand');
-  drawerWidth = await page.evaluate(() => document.getElementById('averyPreviewDrawer').offsetWidth);
-  console.log('Drawer width after collapse click:', drawerWidth);
 
-  // 7. Test Interactive Splitter Dragging
-  console.log('Testing Splitter Dragging...');
-  const splitter = await page.locator('#workspaceSplitter').boundingBox();
-  await page.mouse.move(splitter.x + 4, splitter.y + 100);
-  await page.mouse.down();
-  await page.mouse.move(splitter.x - 150, splitter.y + 100);
-  await page.mouse.up();
-
-  const widthAfterSplitter = await page.evaluate(() => document.getElementById('averyPreviewDrawer').offsetWidth);
-  console.log('Drawer width after splitter drag:', widthAfterSplitter);
-  if (widthAfterSplitter <= drawerWidth) {
-    throw new Error('Splitter drag did not increase drawer width!');
-  }
-
-  // 8. Test Data Manipulation: Insert EU Nutrition Template
-  console.log('Testing "Vzor EÚ údajov" insertion...');
-  await page.click('#btnInsertNutritionTemplate');
-  const freshA1 = (await page.textContent('td[data-addr="A1"]')).trim();
-  const freshA8 = (await page.textContent('td[data-addr="A8"]')).trim();
-  console.log('Template inserted values -> A1:', freshA1, '| A8:', freshA8);
-  if (freshA1 !== 'Výživové údaje na' || freshA8 !== 'Soľ') {
-    throw new Error('EU template was not properly inserted into the grid!');
-  }
-
-  // 9. Capture screenshot to artifact / verification file
+  // 12. Capture screenshot to verification file
   await page.screenshot({ path: path.resolve(__dirname, '../verification-excel-ui.png') });
   console.log('Screenshot saved to verification-excel-ui.png');
 

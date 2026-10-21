@@ -227,10 +227,16 @@
   // Ribbon Tools
   const fontSelect = document.getElementById('ribbonFontFamily');
   const fontSizeSelect = document.getElementById('ribbonFontSize');
+  const btnFontInc = document.getElementById('btnFontInc');
+  const btnFontDec = document.getElementById('btnFontDec');
   const boldBtn = document.getElementById('btnBold');
   const italicBtn = document.getElementById('btnItalic');
   const ribbonTextColor = document.getElementById('ribbonTextColor');
   const ribbonFillColor = document.getElementById('ribbonFillColor');
+  const btnTextColorWrap = document.getElementById('btnTextColorWrap');
+  const btnFillColorWrap = document.getElementById('btnFillColorWrap');
+  const textColorBar = document.getElementById('textColorBar');
+  const fillColorBar = document.getElementById('fillColorBar');
 
   // Border Controls
   const borderDropdownBtn = document.getElementById('btnBorderDropdown');
@@ -246,20 +252,24 @@
   const indentIncBtn = document.getElementById('btnIndentInc');
   const indentDecBtn = document.getElementById('btnIndentDec');
 
-  // Data Manipulation
+  // Data & Table Manipulation
   const btnInsertRow = document.getElementById('btnInsertRow');
   const btnDeleteRow = document.getElementById('btnDeleteRow');
   const btnInsertCol = document.getElementById('btnInsertCol');
   const btnDeleteCol = document.getElementById('btnDeleteCol');
+  const btnMoveUp = document.getElementById('btnMoveUp');
+  const btnMoveDown = document.getElementById('btnMoveDown');
+  const btnMoveLeft = document.getElementById('btnMoveLeft');
+  const btnMoveRight = document.getElementById('btnMoveRight');
   const btnClearContent = document.getElementById('btnClearContent');
   const btnClearFormat = document.getElementById('btnClearFormat');
-  const btnInsertNutritionTemplate = document.getElementById('btnInsertNutritionTemplate');
 
   // Export & Files
   const btnSetExportRange = document.getElementById('btnSetExportRange');
   const btnCopyAvery = document.getElementById('btnCopyAvery');
   const btnExportSvg = document.getElementById('btnExportSvg');
   const btnExportPng = document.getElementById('btnExportPng');
+  const btnExportJpg = document.getElementById('btnExportJpg');
   const btnUploadExcel = document.getElementById('btnUploadExcel');
   const excelFilePicker = document.getElementById('excelFilePicker');
 
@@ -291,7 +301,7 @@
       tab.className = `sheet-tab ${isActive ? 'active' : ''}`;
       tab.innerHTML = `
         <span class="sheet-tab-title" title="${sheet.name}">${sheet.name}</span>
-        <span class="sheet-tab-close" title="Zmazať hárok">✕</span>
+        <span class="sheet-tab-close" title="Zmazať hárok">&times;</span>
       `;
 
       tab.addEventListener('click', (e) => {
@@ -474,6 +484,13 @@
     td.style.color = cellData.textColor || '#000000';
     td.style.backgroundColor = cellData.fillColor || '';
     td.style.paddingLeft = (cellData.indent ? (8 + cellData.indent) : 6) + 'px';
+    const fontSize = cellData.fontSize || 11;
+    td.style.fontSize = fontSize + 'pt';
+    if (cellData.fontFamily) {
+      td.style.fontFamily = cellData.fontFamily;
+    } else {
+      td.style.fontFamily = '';
+    }
 
     // Borders
     td.style.borderBottom = getBorderCss(cellData.borderBottom);
@@ -516,6 +533,24 @@
     // Ribbon states
     boldBtn.classList.toggle('active', !!cellData.bold);
     italicBtn.classList.toggle('active', !!cellData.italic);
+    if (fontSizeSelect) {
+      fontSizeSelect.value = String(cellData.fontSize || 11);
+    }
+    if (fontSelect && cellData.fontFamily) {
+      fontSelect.value = cellData.fontFamily;
+    }
+    if (textColorBar) {
+      textColorBar.setAttribute('fill', cellData.textColor || '#c00000');
+    }
+    if (fillColorBar) {
+      fillColorBar.setAttribute('fill', cellData.fillColor || '#ffff00');
+    }
+    if (ribbonTextColor && cellData.textColor) {
+      ribbonTextColor.value = cellData.textColor;
+    }
+    if (ribbonFillColor && cellData.fillColor) {
+      ribbonFillColor.value = cellData.fillColor;
+    }
 
     refreshSelectionVisuals();
   }
@@ -620,10 +655,83 @@
     updatePreview();
   });
 
-  // Text Color & Fill Color
+  // Font Size & Font Family
+  const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48];
+
+  function applyFontSize(size) {
+    const sheet = getActiveSheet();
+    if (!sheet.cells) sheet.cells = {};
+    const cells = getCellsInRange();
+    cells.forEach(item => {
+      if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+      sheet.cells[item.addr].fontSize = size;
+      const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+      if (td) applyCellStyles(td, sheet.cells[item.addr]);
+    });
+    if (fontSizeSelect) fontSizeSelect.value = String(size);
+    saveAppState();
+    updatePreview();
+  }
+
+  if (fontSizeSelect) {
+    fontSizeSelect.addEventListener('change', () => {
+      applyFontSize(parseInt(fontSizeSelect.value, 10) || 11);
+    });
+  }
+
+  if (btnFontInc) {
+    btnFontInc.addEventListener('click', () => {
+      const cur = parseInt(fontSizeSelect ? fontSizeSelect.value : '11', 10) || 11;
+      const next = FONT_SIZES.find(s => s > cur) || (cur + 2);
+      applyFontSize(next);
+    });
+  }
+
+  if (btnFontDec) {
+    btnFontDec.addEventListener('click', () => {
+      const cur = parseInt(fontSizeSelect ? fontSizeSelect.value : '11', 10) || 11;
+      const prev = [...FONT_SIZES].reverse().find(s => s < cur) || Math.max(6, cur - 2);
+      applyFontSize(prev);
+    });
+  }
+
+  if (fontSelect) {
+    fontSelect.addEventListener('change', () => {
+      const fam = fontSelect.value;
+      const sheet = getActiveSheet();
+      if (!sheet.cells) sheet.cells = {};
+      getCellsInRange().forEach(item => {
+        if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+        sheet.cells[item.addr].fontFamily = fam;
+        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+        if (td) applyCellStyles(td, sheet.cells[item.addr]);
+      });
+      saveAppState();
+      updatePreview();
+    });
+  }
+
+  // Text Color & Fill Color with dynamic ribbon bars
+  if (btnTextColorWrap && ribbonTextColor) {
+    btnTextColorWrap.addEventListener('click', (e) => {
+      if (e.target !== ribbonTextColor) {
+        ribbonTextColor.click();
+      }
+    });
+  }
+
+  if (btnFillColorWrap && ribbonFillColor) {
+    btnFillColorWrap.addEventListener('click', (e) => {
+      if (e.target !== ribbonFillColor) {
+        ribbonFillColor.click();
+      }
+    });
+  }
+
   if (ribbonTextColor) {
     ribbonTextColor.addEventListener('input', () => {
       const color = ribbonTextColor.value;
+      if (textColorBar) textColorBar.setAttribute('fill', color);
       const sheet = getActiveSheet();
       if (!sheet.cells) sheet.cells = {};
       getCellsInRange().forEach(item => {
@@ -640,6 +748,7 @@
   if (ribbonFillColor) {
     ribbonFillColor.addEventListener('input', () => {
       const color = ribbonFillColor.value;
+      if (fillColorBar) fillColorBar.setAttribute('fill', color);
       const sheet = getActiveSheet();
       if (!sheet.cells) sheet.cells = {};
       getCellsInRange().forEach(item => {
@@ -967,53 +1076,85 @@
     }
   });
 
-  // --- Insert Standard EU Nutrition Table Template ---
-  if (btnInsertNutritionTemplate) {
-    btnInsertNutritionTemplate.addEventListener('click', () => {
-      const sheet = getActiveSheet();
-      if (!sheet.cells) sheet.cells = {};
-      const template = [
-        { name: 'Výživové údaje na', val: '100g', bold: true, indent: 0, borderB: { width: 2, style: 'solid', color: '#000000' } },
-        { name: 'Energetická hodnota', val: '1372kJ /\n328kcal', bold: false, indent: 0, borderB: { width: 2, style: 'solid', color: '#000000' } },
-        { name: 'Tuky', val: '0,12g', bold: false, indent: 0, borderB: { width: 1, style: 'solid', color: '#000000' } },
-        { name: 'z toho nasýtené mastné kyseliny', val: '0,08g', bold: false, indent: 18, borderB: { width: 1, style: 'solid', color: '#000000' } },
-        { name: 'Sacharidy', val: '80,9g', bold: false, indent: 0, borderB: { width: 1, style: 'solid', color: '#000000' } },
-        { name: 'z toho cukry', val: '70,4g', bold: false, indent: 18, borderB: { width: 1, style: 'solid', color: '#000000' } },
-        { name: 'Bielkoviny', val: '1,54g', bold: false, indent: 0, borderB: { width: 1, style: 'solid', color: '#000000' } },
-        { name: 'Soľ', val: '0,23g', bold: false, indent: 0, borderB: { width: 2, style: 'solid', color: '#000000' } }
-      ];
+  // --- Move Table Across Spreadsheet Grid ---
+  function moveTable(deltaRow, deltaCol) {
+    const sheet = getActiveSheet();
+    if (!sheet) return;
+    const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
+    const sC = colIndex(range.startCol) + deltaCol;
+    const eC = colIndex(range.endCol) + deltaCol;
+    const sR = range.startRow + deltaRow;
+    const eR = range.endRow + deltaRow;
 
-      template.forEach((item, idx) => {
-        const row = idx + 1;
-        sheet.cells[`A${row}`] = {
-          v: item.name,
-          bold: item.bold,
-          align: idx === 0 ? 'center' : 'left',
-          indent: item.indent,
-          borderTop: { width: idx === 0 ? 2 : 1, style: 'solid', color: '#000000' },
-          borderBottom: item.borderB,
-          borderLeft: { width: 2, style: 'solid', color: '#000000' },
-          borderRight: { width: 1, style: 'solid', color: '#000000' }
-        };
-        sheet.cells[`B${row}`] = {
-          v: item.val,
-          bold: item.bold,
-          align: idx === 0 ? 'center' : 'right',
-          indent: 0,
-          borderTop: { width: idx === 0 ? 2 : 1, style: 'solid', color: '#000000' },
-          borderBottom: item.borderB,
-          borderLeft: { width: 1, style: 'solid', color: '#000000' },
-          borderRight: { width: 2, style: 'solid', color: '#000000' }
-        };
-      });
+    if (sC < 0 || eC >= COLUMNS.length || sR < 1 || eR > ROWS_COUNT) {
+      showToast('Tabuľku nie je možné posunúť mimo rozsah hárku (A1 až J24).', false);
+      return;
+    }
 
-      sheet.exportRange = { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
-      saveAppState();
-      renderGrid();
-      updatePreview();
-      showToast('Vzor výživových údajov (EÚ 1169/2011) bol úspešne vložený.');
+    const oldSC = colIndex(range.startCol);
+    const oldEC = colIndex(range.endCol);
+    const oldSR = range.startRow;
+    const oldER = range.endRow;
+
+    // Collect all cells within the table
+    const movingCells = [];
+    for (let r = oldSR; r <= oldER; r++) {
+      for (let c = oldSC; c <= oldEC; c++) {
+        const fromAddr = `${COLUMNS[c]}${r}`;
+        const toAddr = `${COLUMNS[c + deltaCol]}${r + deltaRow}`;
+        const data = (sheet.cells && sheet.cells[fromAddr]) ? JSON.parse(JSON.stringify(sheet.cells[fromAddr])) : null;
+        movingCells.push({ fromAddr, toAddr, data });
+      }
+    }
+
+    // Delete old positions from sheet.cells
+    movingCells.forEach(item => {
+      if (sheet.cells) delete sheet.cells[item.fromAddr];
     });
+
+    // Write to new positions
+    if (!sheet.cells) sheet.cells = {};
+    movingCells.forEach(item => {
+      if (item.data) {
+        sheet.cells[item.toAddr] = item.data;
+      }
+    });
+
+    // Shift row heights if custom
+    if (sheet.rowHeights) {
+      const newRowHeights = {};
+      for (const rStr in sheet.rowHeights) {
+        const r = parseInt(rStr, 10);
+        if (r >= oldSR && r <= oldER) {
+          newRowHeights[r + deltaRow] = sheet.rowHeights[r];
+        } else {
+          newRowHeights[r] = sheet.rowHeights[r];
+        }
+      }
+      sheet.rowHeights = newRowHeights;
+    }
+
+    // Update table exportRange
+    sheet.exportRange = {
+      startCol: COLUMNS[sC],
+      startRow: sR,
+      endCol: COLUMNS[eC],
+      endRow: eR
+    };
+
+    // Update selection to cover the new moved table
+    updateSelectionRange(COLUMNS[sC], sR, COLUMNS[eC], eR);
+
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Tabuľka presunutá na ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}.`);
   }
+
+  if (btnMoveUp) btnMoveUp.addEventListener('click', () => moveTable(-1, 0));
+  if (btnMoveDown) btnMoveDown.addEventListener('click', () => moveTable(1, 0));
+  if (btnMoveLeft) btnMoveLeft.addEventListener('click', () => moveTable(0, -1));
+  if (btnMoveRight) btnMoveRight.addEventListener('click', () => moveTable(0, 1));
 
   // --- Button: Nastaviť výber ako oblasť pre export ---
   if (btnSetExportRange) {
@@ -1185,7 +1326,19 @@
     let totalH = 0;
     const rowPositions = [];
     for (let r = range.startRow; r <= range.endRow; r++) {
-      const h = rowHeights[r] || (r === 2 ? 38 : 24);
+      let maxCellPt = 11;
+      let maxLines = 1;
+      for (let c = sC; c <= eC; c++) {
+        const cell = (sheet.cells && sheet.cells[`${COLUMNS[c]}${r}`]) || {};
+        const pt = cell.fontSize || 11;
+        if (pt > maxCellPt) maxCellPt = pt;
+        const lines = String(cell.v || '').split('\n').length;
+        if (lines > maxLines) maxLines = lines;
+      }
+      const cellPx = Math.round(maxCellPt * 1.33);
+      const neededH = Math.round(maxLines * (cellPx * 1.25) + 8);
+      const baseH = rowHeights[r] || (r === 2 ? 38 : 24);
+      const h = Math.max(baseH, neededH);
       rowPositions.push({ row: r, y: totalH, height: h });
       totalH += h;
     }
@@ -1233,6 +1386,11 @@
         const cellX = margin + ac.x;
         const cellW = ac.width;
 
+        const cellFontSize = cell.fontSize || 11;
+        const cellFontPx = Math.round(cellFontSize * 1.33);
+        const cellFontFam = cell.fontFamily || 'Calibri, Arial, sans-serif';
+        const lineH = Math.round(cellFontPx * 1.25);
+
         const textY = y + h / 2;
         const indentX = cell.indent || 0;
         const textClass = (cell.bold ? 'bold ' : '') + (cell.italic ? 'italic ' : '');
@@ -1241,21 +1399,21 @@
         const valLines = String(cell.v || '').split('\n');
         if (valLines.length === 1) {
           if (cell.align === 'center') {
-            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}" fill="${textColor}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">${escapeXml(cell.v)}</text>\n`;
           } else if (cell.align === 'right') {
-            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}" fill="${textColor}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">${escapeXml(cell.v)}</text>\n`;
           } else {
-            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}" fill="${textColor}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">${escapeXml(cell.v)}</text>\n`;
           }
         } else {
           // Multiline cell (kJ / kcal)
-          const startY = textY - ((valLines.length - 1) * 7);
-          const posX = cell.align === 'right' ? (cellX + cellW - 8) : (cellX + 8 + indentX);
-          const anchorClass = cell.align === 'right' ? 'right ' + textClass : textClass;
+          const startY = textY - ((valLines.length - 1) * (lineH / 2));
+          const posX = cell.align === 'right' ? (cellX + cellW - 8) : (cell.align === 'center' ? (cellX + cellW / 2) : (cellX + 8 + indentX));
+          const anchorClass = (cell.align === 'right' ? 'right ' : (cell.align === 'center' ? 'center ' : '')) + textClass;
 
-          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}" fill="${textColor}">`;
+          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}" fill="${textColor}" font-size="${cellFontPx}px" font-family="${cellFontFam}">`;
           valLines.forEach((line, idx) => {
-            svg += `<tspan x="${posX}" dy="${idx === 0 ? 0 : 15}">${escapeXml(line)}</tspan>`;
+            svg += `<tspan x="${posX}" dy="${idx === 0 ? 0 : lineH}">${escapeXml(line)}</tspan>`;
           });
           svg += `</text>\n`;
         }
@@ -1362,15 +1520,15 @@
       .replace(/\s+/g, '_');
   }
 
-  // 1. Copy to Clipboard (Clean, no emojis)
+  // 1. Copy to Clipboard (Clean, Ultra HD 600 DPI)
   btnCopyAvery.addEventListener('click', async () => {
     const sheet = getActiveSheet();
     const { svg, width, height } = generateTableSVG(sheet);
 
     try {
-      showToast('Generujem obrázok tabuľky...');
+      showToast('Generujem obrázok tabuľky v Ultra HD kvalite...');
       const canvas = document.createElement('canvas');
-      const scale = 4; // 300 DPI high resolution
+      const scale = 8; // Ultra HD 600+ DPI maximum quality
       canvas.width = width * scale;
       canvas.height = height * scale;
       const ctx = canvas.getContext('2d');
@@ -1382,6 +1540,8 @@
       const url = URL.createObjectURL(blob);
 
       img.onload = async () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(url);
 
@@ -1391,7 +1551,7 @@
             if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
               const item = new ClipboardItem({ 'image/png': pngBlob });
               await navigator.clipboard.write([item]);
-              showToast('Skopírované! V programe môžete vložiť cez Ctrl + V.', true);
+              showToast('Skopírované v Ultra HD kvalite! Vložte cez Ctrl + V.', true);
             } else {
               throw new Error('ClipboardItem nepodporované');
             }
@@ -1399,9 +1559,9 @@
             // Fallback download if clipboard is restricted
             const a = document.createElement('a');
             a.href = URL.createObjectURL(pngBlob);
-            a.download = sanitizeName(sheet.name) + '.png';
+            a.download = sanitizeName(sheet.name) + '_UltraHD.png';
             a.click();
-            showToast('Obrázok stiahnutý ako PNG.', true);
+            showToast('Obrázok stiahnutý ako PNG v Ultra HD kvalite.', true);
           }
         }, 'image/png');
       };
@@ -1428,12 +1588,12 @@
     showToast(`Vektorový súbor "${sheet.name}.svg" bol stiahnutý.`);
   });
 
-  // 3. Download PNG (300 DPI)
+  // 3. Download PNG (Ultra HD 600 DPI)
   btnExportPng.addEventListener('click', () => {
     const sheet = getActiveSheet();
     const { svg, width, height } = generateTableSVG(sheet);
     const canvas = document.createElement('canvas');
-    const scale = 4; // 300 DPI
+    const scale = 8; // Ultra HD 600+ DPI
     canvas.width = width * scale;
     canvas.height = height * scale;
     const ctx = canvas.getContext('2d');
@@ -1451,13 +1611,48 @@
         if (!pngBlob) return;
         const a = document.createElement('a');
         a.href = URL.createObjectURL(pngBlob);
-        a.download = sanitizeName(sheet.name) + '_300DPI.png';
+        a.download = sanitizeName(sheet.name) + '_UltraHD.png';
         a.click();
-        showToast(`Tlačový obrázok "${sheet.name}_300DPI.png" bol stiahnutý.`);
+        showToast(`Tlačový obrázok "${sheet.name}_UltraHD.png" (Ultra HD 600 DPI) bol stiahnutý.`);
       }, 'image/png');
     };
     img.src = url;
   });
+
+  // 4. Download JPG (Ultra HD 600 DPI)
+  if (btnExportJpg) {
+    btnExportJpg.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      const { svg, width, height } = generateTableSVG(sheet);
+      const canvas = document.createElement('canvas');
+      const scale = 8; // Ultra HD 600+ DPI
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      const img = new Image();
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((jpgBlob) => {
+          if (!jpgBlob) return;
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(jpgBlob);
+          a.download = sanitizeName(sheet.name) + '_UltraHD.jpg';
+          a.click();
+          showToast(`Tlačový obrázok "${sheet.name}_UltraHD.jpg" (Ultra HD 600 DPI) bol stiahnutý.`);
+        }, 'image/jpeg', 1.0);
+      };
+      img.src = url;
+    });
+  }
 
   // 4. Excel Upload
   btnUploadExcel.addEventListener('click', () => {

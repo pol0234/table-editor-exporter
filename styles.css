@@ -114,43 +114,68 @@ body {
 .excel-ribbon-toolbar {
   background: var(--bg-ribbon);
   border-bottom: 1px solid var(--border-medium);
-  padding: 6px 16px;
+  padding: 4px 6px;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  height: 72px;
+  align-items: stretch;
+  gap: 2px;
+  height: 86px;
   flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .ribbon-group {
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   height: 100%;
   border-right: 1px solid var(--border-light);
-  padding-right: 12px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.ribbon-group-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.ribbon-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 26px;
 }
 
 .ribbon-group-title {
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   color: var(--text-muted);
   text-align: center;
-  margin-top: 2px;
+  height: 15px;
+  line-height: 15px;
+  margin-top: 1px;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .ribbon-btn {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
-  padding: 4px 8px;
+  padding: 3px 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-main);
-  height: 32px;
+  height: 26px;
   transition: background 0.1s, border-color 0.1s;
 }
 
@@ -164,27 +189,78 @@ body {
   border-color: var(--border-strong);
 }
 
-.ribbon-btn-sm {
-  height: 24px;
-  padding: 2px 6px;
-  font-size: 0.74rem;
-  font-weight: 500;
+.ribbon-btn-icon-sq {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.8rem;
   border: 1px solid var(--border-medium);
-  background: #ffffff;
+  border-radius: 3px;
+  background: white;
+  cursor: pointer;
 }
 
-.ribbon-btn-sm:hover {
+.ribbon-btn-icon-sq:hover {
+  background: #f3f2f1;
+  border-color: var(--excel-green);
+}
+
+.ribbon-btn-compact {
+  height: 26px;
+  padding: 0 7px;
+  font-size: 0.73rem;
+  font-weight: 500;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  background: white;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ribbon-btn-compact:hover {
+  background: #f3f2f1;
+  border-color: var(--excel-green);
+}
+
+.ribbon-btn-icon {
+  height: 26px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  background: white;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ribbon-btn-icon:hover {
   background: #f3f2f1;
   border-color: var(--excel-green);
 }
 
 .ribbon-btn-lg {
   height: 56px;
-  padding: 4px 12px;
+  min-width: 44px;
+  padding: 3px 4px;
+  display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.71rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  background: transparent;
 }
 
 .ribbon-btn-lg svg {
@@ -225,7 +301,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
+  width: 28px;
   height: 26px;
   border: 1px solid var(--border-medium);
   border-radius: 3px;
