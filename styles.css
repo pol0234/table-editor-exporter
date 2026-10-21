@@ -135,73 +135,26 @@ body {
 /* ==========================================================================
    2. Excel Ribbon Toolbar (Pás nástrojov)
    ========================================================================== */
-.excel-ribbon-wrapper {
-  position: relative;
-  width: 100%;
-  background: var(--bg-ribbon);
-  border-bottom: 1px solid var(--border-medium);
-  flex-shrink: 0;
-}
-
 .excel-ribbon-toolbar {
   background: var(--bg-ribbon);
-  padding: 2px 4px 1px 4px;
+  border-bottom: 1px solid var(--border-medium);
+  padding: 4px 8px 2px 8px;
   display: flex;
   align-items: stretch;
-  gap: 2px;
-  min-height: 82px;
-  max-height: 84px;
+  gap: 4px;
+  min-height: 86px;
+  max-height: 86px;
+  flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .excel-ribbon-toolbar::-webkit-scrollbar {
-  height: 4px;
-}
-.excel-ribbon-toolbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.excel-ribbon-toolbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 4px;
-}
-.excel-ribbon-toolbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.38);
-}
-
-.ribbon-scroll-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--border-medium);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  border-radius: 3px;
   display: none;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 60;
-  color: var(--text-main);
-  transition: opacity 0.15s, background 0.15s;
-}
-.ribbon-scroll-btn:hover {
-  background: white;
-  border-color: var(--excel-green);
-  color: var(--excel-green);
-}
-.ribbon-scroll-left {
-  left: 2px;
-}
-.ribbon-scroll-right {
-  right: 2px;
-}
-.ribbon-scroll-btn.visible {
-  display: flex;
+  width: 0;
+  height: 0;
 }
 
 .ribbon-group {
@@ -209,10 +162,10 @@ body {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
   height: 100%;
   border-right: 1px solid var(--border-light);
-  padding: 0 3px;
+  padding: 0 6px;
   flex-shrink: 0;
 }
 
@@ -221,23 +174,23 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   flex: 1;
 }
 
 .ribbon-row {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 25px;
+  gap: 3px;
+  height: 26px;
 }
 
 .ribbon-group-title {
-  font-size: 0.65rem;
+  font-size: 0.67rem;
   color: var(--text-muted);
   text-align: center;
-  height: 14px;
-  line-height: 14px;
+  height: 15px;
+  line-height: 15px;
   margin-top: 1px;
   white-space: nowrap;
   user-select: none;
@@ -247,15 +200,15 @@ body {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
-  padding: 2px 4px;
+  padding: 3px 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  font-size: 0.74rem;
+  gap: 4px;
+  font-size: 0.78rem;
   color: var(--text-main);
-  height: 25px;
+  height: 26px;
   transition: background 0.1s, border-color 0.1s;
 }
 
@@ -327,16 +280,16 @@ body {
 }
 
 .ribbon-btn-lg {
-  height: 54px;
-  min-width: 36px;
-  padding: 2px 3px;
+  height: 58px;
+  min-width: 46px;
+  padding: 3px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   font-weight: 600;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   border: 1px solid transparent;
   border-radius: 3px;
   cursor: pointer;
@@ -344,41 +297,8 @@ body {
 }
 
 .ribbon-btn-lg svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Responsive dynamic scaling for Ribbon Toolbar */
-@media (max-width: 1440px) {
-  .excel-ribbon-toolbar {
-    gap: 1px;
-    padding: 2px 2px 1px 2px;
-  }
-  .ribbon-group {
-    padding: 0 2px;
-  }
-  .ribbon-btn {
-    padding: 2px 3px;
-    font-size: 0.72rem;
-  }
-  .ribbon-btn-compact, .ribbon-btn-icon {
-    padding: 0 3px;
-    font-size: 0.69rem;
-  }
-  .ribbon-btn-lg {
-    min-width: 34px;
-    padding: 2px 2px;
-    font-size: 0.65rem;
-  }
-  .ribbon-group-title {
-    font-size: 0.62rem;
-  }
-  #ribbonFontFamily {
-    width: 90px;
-  }
-  #ribbonFontSize {
-    width: 46px;
-  }
+  width: 22px;
+  height: 22px;
 }
 
 /* Primary Action Button (Kopírovať) */
@@ -781,11 +701,12 @@ body {
 /* Cells */
 .grid-cell {
   border: 1px solid var(--border-light);
-  padding: 3px 6px;
+  padding: 0 5px;
   overflow: hidden;
-  white-space: pre-line;
-  word-break: break-word;
-  line-height: 1.25;
+  text-overflow: clip;
+  white-space: pre;
+  box-sizing: border-box;
+  vertical-align: middle;
   outline: none;
   cursor: cell;
   position: relative;

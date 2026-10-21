@@ -61,10 +61,10 @@
         colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B2': { v: '1372kJ /\n328kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B2': { v: '1372kJ /\n328kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
           'B3': { v: '0,12g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
           'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
@@ -86,10 +86,10 @@
         colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B2': { v: '1420kJ /\n339kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B2': { v: '1420kJ /\n339kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
           'B3': { v: '0,50g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
           'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
@@ -111,10 +111,10 @@
         colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B2': { v: '1390kJ /\n332kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B2': { v: '1390kJ /\n332kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
           'B3': { v: '0,20g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
           'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
@@ -136,10 +136,10 @@
         colWidths: { A: 270, B: 120, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
-          'B2': { v: '1410kJ /\n337kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B1': { v: '100g', bold: true, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox },
+          'B2': { v: '1410kJ /\n337kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderRight: thickBox },
           'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
           'B3': { v: '0,35g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
           'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
@@ -176,6 +176,13 @@
       const parsed = JSON.parse(saved);
       if (parsed && Array.isArray(parsed.sheets) && parsed.sheets.length > 0) {
         appState = parsed;
+        // Ensure colWidths.A is spacious enough (at least 270px) so nutrient text doesn't wrap
+        appState.sheets.forEach(sh => {
+          if (!sh.colWidths) sh.colWidths = {};
+          if (!sh.colWidths.A || sh.colWidths.A < 260) {
+            sh.colWidths.A = 270;
+          }
+        });
       }
     }
   } catch (e) {
@@ -524,6 +531,8 @@
       th.className = 'grid-header-row';
       th.dataset.row = r;
       th.style.height = rowHeight + 'px';
+      th.style.maxHeight = rowHeight + 'px';
+      th.style.lineHeight = `${Math.max(4, rowHeight - 2)}px`;
       th.innerHTML = `
         <span>${r}</span>
         <div class="row-resize-handle" data-row="${r}" title="Potiahnutím myšou zmeníte výšku riadku ${r}"></div>
@@ -539,6 +548,9 @@
         td.dataset.addr = addr;
         td.dataset.col = col;
         td.dataset.row = r;
+        td.style.height = rowHeight + 'px';
+        td.style.maxHeight = rowHeight + 'px';
+        td.style.lineHeight = `${Math.max(4, rowHeight - 2)}px`;
         td.contentEditable = 'true';
         td.spellcheck = false;
 
@@ -1589,7 +1601,7 @@
   window.addEventListener('mousemove', (e) => {
     if (activeColHandle) {
       const diff = e.clientX - resizeStartX;
-      const newWidth = Math.max(35, resizeStartDim + diff);
+      const newWidth = Math.max(6, resizeStartDim + diff);
       const sheet = getActiveSheet();
       if (!sheet.colWidths) sheet.colWidths = {};
       sheet.colWidths[resizeTargetName] = newWidth;
@@ -1598,17 +1610,40 @@
       const colEl = gridTable.querySelectorAll('col')[colIdx];
       if (colEl) colEl.style.width = newWidth + 'px';
       const thEl = gridTable.querySelector(`th.grid-header-col[data-col="${resizeTargetName}"]`);
-      if (thEl) thEl.style.width = newWidth + 'px';
+      if (thEl) {
+        thEl.style.width = newWidth + 'px';
+        thEl.style.minWidth = newWidth + 'px';
+        thEl.style.maxWidth = newWidth + 'px';
+      }
+      const tds = gridTable.querySelectorAll(`td[data-col="${resizeTargetName}"]`);
+      tds.forEach(td => {
+        td.style.width = newWidth + 'px';
+        td.style.maxWidth = newWidth + 'px';
+      });
     } else if (activeRowHandle) {
       const diff = e.clientY - resizeStartY;
-      const newHeight = Math.max(18, resizeStartDim + diff);
+      const newHeight = Math.max(4, resizeStartDim + diff);
       const sheet = getActiveSheet();
       if (!sheet.rowHeights) sheet.rowHeights = {};
       const rNum = parseInt(resizeTargetName, 10);
       sheet.rowHeights[rNum] = newHeight;
 
       const tr = gridTable.querySelector(`tbody tr:nth-child(${rNum})`);
-      if (tr) tr.style.height = newHeight + 'px';
+      if (tr) {
+        tr.style.height = newHeight + 'px';
+        const th = tr.querySelector('th.grid-header-row');
+        if (th) {
+          th.style.height = newHeight + 'px';
+          th.style.maxHeight = newHeight + 'px';
+          th.style.lineHeight = `${Math.max(4, newHeight - 2)}px`;
+        }
+        const tds = tr.querySelectorAll('td.grid-cell');
+        tds.forEach(td => {
+          td.style.height = newHeight + 'px';
+          td.style.maxHeight = newHeight + 'px';
+          td.style.lineHeight = `${Math.max(4, newHeight - 2)}px`;
+        });
+      }
     }
   });
 
@@ -1619,6 +1654,7 @@
       activeRowHandle = null;
       document.body.style.cursor = '';
       saveAppState();
+      renderGrid();
       updatePreview();
     }
   });
@@ -2466,22 +2502,11 @@
     });
   }
 
-  // --- Horizontal mouse wheel, touchpad & button scroll for ribbon toolbar ---
+  // --- Horizontal mouse wheel and touchpad drag scroll for ribbon toolbar ---
   const ribbonToolbar = document.querySelector('.excel-ribbon-toolbar');
-  const btnRibbonScrollLeft = document.getElementById('btnRibbonScrollLeft');
-  const btnRibbonScrollRight = document.getElementById('btnRibbonScrollRight');
-
-  function updateRibbonScrollButtons() {
-    if (!ribbonToolbar) return;
-    const canScrollLeft = ribbonToolbar.scrollLeft > 6;
-    const canScrollRight = ribbonToolbar.scrollLeft < (ribbonToolbar.scrollWidth - ribbonToolbar.clientWidth - 6);
-    if (btnRibbonScrollLeft) btnRibbonScrollLeft.classList.toggle('visible', canScrollLeft);
-    if (btnRibbonScrollRight) btnRibbonScrollRight.classList.toggle('visible', canScrollRight);
-  }
 
   if (ribbonToolbar) {
     ribbonToolbar.addEventListener('scroll', () => {
-      updateRibbonScrollButtons();
       if (borderMenu && borderMenu.classList.contains('open')) {
         positionBorderMenu();
       }
@@ -2525,21 +2550,6 @@
         ribbonToolbar.style.cursor = '';
       }
     });
-
-    window.addEventListener('resize', updateRibbonScrollButtons);
-    setTimeout(updateRibbonScrollButtons, 150);
-  }
-
-  if (btnRibbonScrollLeft) {
-    btnRibbonScrollLeft.addEventListener('click', () => {
-      if (ribbonToolbar) ribbonToolbar.scrollBy({ left: -220, behavior: 'smooth' });
-    });
-  }
-
-  if (btnRibbonScrollRight) {
-    btnRibbonScrollRight.addEventListener('click', () => {
-      if (ribbonToolbar) ribbonToolbar.scrollBy({ left: 220, behavior: 'smooth' });
-    });
   }
 
   // --- SVG Live Preview Generator With Custom Pixel Borders & Real Dimensions ---
@@ -2555,8 +2565,9 @@
     let totalW = 0;
     for (let c = sC; c <= eC; c++) {
       const colLetter = COLUMNS[c];
+      const userW = (colWidths && colWidths[colLetter] > 0) ? colWidths[colLetter] : null;
       const thEl = gridTable ? gridTable.querySelector(`th.grid-header-col[data-col="${colLetter}"]`) : null;
-      const w = (thEl && thEl.offsetWidth > 0) ? thEl.offsetWidth : (colWidths[colLetter] || (colLetter === 'A' ? 220 : (colLetter === 'B' ? 110 : 70)));
+      const w = userW !== null ? userW : ((thEl && thEl.offsetWidth > 0) ? thEl.offsetWidth : (colLetter === 'A' ? 270 : (colLetter === 'B' ? 120 : 70)));
       activeCols.push({ col: colLetter, width: w, x: totalW });
       totalW += w;
     }
@@ -2564,21 +2575,26 @@
     let totalH = 0;
     const rowPositions = [];
     for (let r = range.startRow; r <= range.endRow; r++) {
+      const userH = (rowHeights && rowHeights[r] > 0) ? rowHeights[r] : null;
       const trEl = gridTable ? gridTable.querySelector(`tbody tr:nth-child(${r})`) : null;
-      let baseH = (trEl && trEl.offsetHeight > 0) ? trEl.offsetHeight : (rowHeights[r] || (r === 2 ? 38 : 24));
-
-      let maxCellPt = 11;
-      let maxLines = 1;
-      for (let c = sC; c <= eC; c++) {
-        const cell = (sheet.cells && sheet.cells[`${COLUMNS[c]}${r}`]) || {};
-        const pt = cell.fontSize || 11;
-        if (pt > maxCellPt) maxCellPt = pt;
-        const lines = String(cell.v || '').split('\n').length;
-        if (lines > maxLines) maxLines = lines;
+      let h;
+      if (userH !== null) {
+        h = userH; // Exact user height - respect completely!
+      } else {
+        let baseH = (trEl && trEl.offsetHeight > 0) ? trEl.offsetHeight : (r === 2 ? 38 : 24);
+        let maxCellPt = 11;
+        let maxLines = 1;
+        for (let c = sC; c <= eC; c++) {
+          const cell = (sheet.cells && sheet.cells[`${COLUMNS[c]}${r}`]) || {};
+          const pt = cell.fontSize || 11;
+          if (pt > maxCellPt) maxCellPt = pt;
+          const lines = String(cell.v || '').split('\n').length;
+          if (lines > maxLines) maxLines = lines;
+        }
+        const cellPx = Math.round(maxCellPt * 1.33);
+        const neededH = Math.round(maxLines * (cellPx * 1.25) + 8);
+        h = Math.max(baseH, neededH);
       }
-      const cellPx = Math.round(maxCellPt * 1.33);
-      const neededH = Math.round(maxLines * (cellPx * 1.25) + 8);
-      const h = Math.max(baseH, neededH);
       rowPositions.push({ row: r, y: totalH, height: h });
       totalH += h;
     }

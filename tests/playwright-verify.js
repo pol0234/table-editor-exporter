@@ -180,15 +180,29 @@ async function runVerification() {
   const rowHandleBox = await page.locator('.row-resize-handle[data-row="1"]').boundingBox();
   if (!rowHandleBox) throw new Error('Row resize handle for row 1 not found!');
   
+  // Expand Row 1
   await page.mouse.move(rowHandleBox.x + rowHandleBox.width / 2, rowHandleBox.y + rowHandleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(rowHandleBox.x + rowHandleBox.width / 2, rowHandleBox.y + 25);
   await page.mouse.up();
 
   const newRow1H = await page.evaluate(() => document.querySelector('tbody tr:nth-child(1)').offsetHeight);
-  console.log(`Row 1 height: ${initialRow1H}px -> ${newRow1H}px`);
+  console.log(`Row 1 height expanded: ${initialRow1H}px -> ${newRow1H}px`);
   if (newRow1H <= initialRow1H) {
     throw new Error(`Expected row 1 height to increase from ${initialRow1H}px, got ${newRow1H}px`);
+  }
+
+  // Shrink Row 1 down to arbitrary small size
+  const handleAfterExpand = await page.locator('.row-resize-handle[data-row="1"]').boundingBox();
+  await page.mouse.move(handleAfterExpand.x + handleAfterExpand.width / 2, handleAfterExpand.y + handleAfterExpand.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleAfterExpand.x + handleAfterExpand.width / 2, handleAfterExpand.y - 40);
+  await page.mouse.up();
+
+  const shrunkRow1H = await page.evaluate(() => document.querySelector('tbody tr:nth-child(1)').offsetHeight);
+  console.log(`Row 1 height shrunk: ${newRow1H}px -> ${shrunkRow1H}px`);
+  if (shrunkRow1H >= newRow1H) {
+    throw new Error(`Expected row 1 height to shrink from ${newRow1H}px, got ${shrunkRow1H}px`);
   }
 
   // Column A resizing
@@ -361,9 +375,9 @@ async function runVerification() {
   // Select A1 to B3 via drag
   const selBoxA1 = await page.locator('td[data-addr="A1"]').boundingBox();
   const selBoxB3 = await page.locator('td[data-addr="B3"]').boundingBox();
-  await page.mouse.move(selBoxA1.x + 10, selBoxA1.y + 10);
+  await page.mouse.move(selBoxA1.x + selBoxA1.width / 2, selBoxA1.y + selBoxA1.height / 2);
   await page.mouse.down();
-  await page.mouse.move(selBoxB3.x + 10, selBoxB3.y + 10);
+  await page.mouse.move(selBoxB3.x + selBoxB3.width / 2, selBoxB3.y + selBoxB3.height / 2);
   await page.mouse.up();
 
   const selStatusBefore = await page.textContent('#statusBarSelection');
