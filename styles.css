@@ -164,8 +164,22 @@ body {
   border-color: var(--border-strong);
 }
 
+.ribbon-btn-sm {
+  height: 24px;
+  padding: 2px 6px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  border: 1px solid var(--border-medium);
+  background: #ffffff;
+}
+
+.ribbon-btn-sm:hover {
+  background: #f3f2f1;
+  border-color: var(--excel-green);
+}
+
 .ribbon-btn-lg {
-  height: 54px;
+  height: 56px;
   padding: 4px 12px;
   flex-direction: column;
   gap: 2px;
@@ -178,31 +192,102 @@ body {
   height: 22px;
 }
 
-/* Primary Avery Button */
-.ribbon-btn-avery {
+/* Primary Action Button (Kopírovať) */
+.ribbon-btn-primary, .ribbon-btn-avery {
   background: var(--excel-green-light);
   border-color: #8ce19e;
   color: var(--excel-green-dark);
 }
 
-.ribbon-btn-avery:hover {
+.ribbon-btn-primary:hover, .ribbon-btn-avery:hover {
   background: #b7eeb7;
   border-color: var(--excel-green);
 }
 
 .ribbon-select {
   font-family: inherit;
-  font-size: 0.82rem;
-  padding: 3px 6px;
+  font-size: 0.8rem;
+  padding: 2px 4px;
   border: 1px solid var(--border-medium);
   border-radius: 3px;
   background: white;
-  height: 28px;
+  height: 26px;
   outline: none;
 }
 
 .ribbon-select:focus {
   border-color: var(--excel-green);
+}
+
+/* Color Pickers in Ribbon */
+.ribbon-color-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  cursor: pointer;
+  background: white;
+  color: var(--text-main);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.ribbon-color-btn:hover {
+  background: #f3f2f1;
+  border-color: var(--excel-green);
+}
+
+.ribbon-color-btn input[type="color"] {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Number Input Group in Ribbon (Hrúbka v px) */
+.ribbon-input-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: white;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  padding: 0 4px;
+  height: 26px;
+}
+
+.ribbon-input-group:focus-within {
+  border-color: var(--excel-green);
+}
+
+.ribbon-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.ribbon-num-input {
+  width: 28px;
+  height: 20px;
+  border: none;
+  outline: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  font-family: inherit;
+  color: var(--text-main);
+}
+
+.ribbon-unit {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  user-select: none;
 }
 
 /* Borders Dropdown Menu */
@@ -217,10 +302,12 @@ body {
   left: 0;
   background: white;
   border: 1px solid var(--border-medium);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
   border-radius: 4px;
   z-index: 1000;
-  width: 220px;
+  width: 245px;
+  max-height: 420px;
+  overflow-y: auto;
   padding: 4px 0;
 }
 
@@ -228,13 +315,31 @@ body {
   display: block;
 }
 
+.border-menu-header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #706e6b;
+  text-transform: uppercase;
+  padding: 6px 12px 2px;
+  letter-spacing: 0.04em;
+  background: #fbfbfb;
+  border-top: 1px solid var(--border-light);
+  margin-top: 2px;
+}
+
+.border-menu-header:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+
 .border-menu-item {
-  padding: 6px 12px;
+  padding: 5px 12px;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
+  color: var(--text-main);
 }
 
 .border-menu-item:hover {
@@ -242,11 +347,83 @@ body {
   color: var(--excel-green);
 }
 
+.border-menu-danger:hover {
+  background: #fde7e9;
+  color: #d13438;
+}
+
+/* Border Sample Icons */
 .border-icon-sample {
   width: 16px;
   height: 16px;
-  border: 1px dashed #666;
   display: inline-block;
+  position: relative;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.border-icon-sample.border-all {
+  border: 1px solid #000;
+  box-shadow: inset 0 0 0 1px #fff, inset 0 7px 0 0 #000, inset 7px 0 0 0 #000;
+}
+
+.border-icon-sample.border-outer {
+  border: 1.5px solid #000;
+}
+
+.border-icon-sample.border-inner {
+  border: 1px dashed #ccc;
+  background: 
+    linear-gradient(to right, transparent 7px, #000 7px, #000 8px, transparent 8px),
+    linear-gradient(to bottom, transparent 7px, #000 7px, #000 8px, transparent 8px);
+}
+
+.border-icon-sample.border-inner-h {
+  border: 1px dashed #ccc;
+  background: linear-gradient(to bottom, transparent 7px, #000 7px, #000 8px, transparent 8px);
+}
+
+.border-icon-sample.border-inner-v {
+  border: 1px dashed #ccc;
+  background: linear-gradient(to right, transparent 7px, #000 7px, #000 8px, transparent 8px);
+}
+
+.border-icon-sample.border-top {
+  border: 1px dashed #ccc;
+  border-top: 2px solid #000;
+}
+
+.border-icon-sample.border-bottom {
+  border: 1px dashed #ccc;
+  border-bottom: 2px solid #000;
+}
+
+.border-icon-sample.border-left {
+  border: 1px dashed #ccc;
+  border-left: 2px solid #000;
+}
+
+.border-icon-sample.border-right {
+  border: 1px dashed #ccc;
+  border-right: 2px solid #000;
+}
+
+.border-icon-sample.border-thick-outer {
+  border: 3px solid #000;
+}
+
+.border-icon-sample.border-thick-bottom {
+  border: 1px dashed #ccc;
+  border-bottom: 3px solid #000;
+}
+
+.border-icon-sample.border-double-bottom {
+  border: 1px dashed #ccc;
+  border-bottom: 3px double #000;
+}
+
+.border-icon-sample.border-none {
+  border: 1px dashed #ccc;
 }
 
 /* ==========================================================================
@@ -467,9 +644,9 @@ body {
    6. Avery Live Preview Drawer (Roztiahnuteľný)
    ========================================================================== */
 .avery-preview-drawer {
-  width: 420px;
+  width: 440px;
   min-width: 320px;
-  max-width: 850px;
+  max-width: 1200px;
   background: #f8fafc;
   border-left: 1px solid var(--border-medium);
   display: flex;
@@ -479,7 +656,7 @@ body {
 }
 
 .avery-preview-drawer.expanded {
-  width: 640px;
+  width: 750px;
 }
 
 .avery-drawer-header {

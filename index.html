@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Výživové údaje – Excel pre Avery</title>
+  <title>Výživové údaje – Tabuľkový editor a export</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
   <header class="excel-titlebar">
     <div class="titlebar-left">
       <div class="excel-icon">X</div>
-      <span class="file-title">Výživové údaje sušené ovocie – Excel pre Avery</span>
+      <span class="file-title">Výživové údaje – Tabuľkový editor</span>
       <div class="auto-save-pill">Automatické ukladanie</div>
     </div>
     <div class="titlebar-actions">
@@ -20,23 +20,23 @@
     </div>
   </header>
 
-  <!-- 2. EXCEL PÁS NÁSTROJOV (PRIAMO PRÍSTUPNÝ A ČISTÝ) -->
+  <!-- 2. EXCEL PÁS NÁSTROJOV (RIBBON TOOLBAR) -->
   <div class="excel-ribbon-toolbar">
     
-    <!-- Skupina Avery Prenos (Hlavná akcia) -->
+    <!-- Skupina Kopírovanie (Hlavná akcia) -->
     <div class="ribbon-group">
-      <button class="ribbon-btn ribbon-btn-lg ribbon-btn-avery" id="btnCopyAvery" title="Skopíruje ostrý obrázok tabuľky priamo do schránky (v Avery stačí stlačiť Ctrl+V)">
+      <button class="ribbon-btn ribbon-btn-lg ribbon-btn-primary" id="btnCopyAvery" title="Skopíruje ostrý obrázok tabuľky priamo do schránky (vloženie cez Ctrl+V)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        <span>Kopírovať pre Avery</span>
+        <span>Kopírovať</span>
       </button>
-      <div class="ribbon-group-title">Avery prenos (Ctrl+V)</div>
+      <div class="ribbon-group-title">Kopírovanie</div>
     </div>
 
-    <!-- Skupina Písmo (Font) -->
+    <!-- Skupina Písmo & Farby -->
     <div class="ribbon-group">
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; gap: 4px;">
-          <select id="ribbonFontFamily" class="ribbon-select" style="width: 110px;">
+          <select id="ribbonFontFamily" class="ribbon-select" style="width: 100px;">
             <option value="Calibri" selected>Calibri</option>
             <option value="Arial">Arial</option>
             <option value="Segoe UI">Segoe UI</option>
@@ -50,46 +50,122 @@
             <option value="16">16</option>
           </select>
         </div>
-        <div style="display: flex; gap: 2px;">
-          <button class="ribbon-btn" id="btnBold" title="Tučné písmo (Bold) pre vybrané bunky"><strong>B</strong></button>
-          <button class="ribbon-btn" id="btnItalic" title="Kurzíva (Italic) pre vybrané bunky"><em>I</em></button>
+        <div style="display: flex; gap: 3px; align-items: center;">
+          <button class="ribbon-btn" id="btnBold" title="Tučné písmo (Bold)"><strong>B</strong></button>
+          <button class="ribbon-btn" id="btnItalic" title="Kurzíva (Italic)"><em>I</em></button>
           
-          <!-- Dropdown orámovania s presnými voľbami z Excelu -->
+          <!-- Farba textu -->
+          <label class="ribbon-color-btn" title="Farba písma">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="6" y="16" font-size="16" font-weight="bold" fill="currentColor">A</text><line x1="4" y1="20" x2="20" y2="20" stroke-width="3"></line></svg>
+            <input type="color" id="ribbonTextColor" value="#000000">
+          </label>
+
+          <!-- Farba výplne bunky -->
+          <label class="ribbon-color-btn" title="Farba výplne (podfarbenie bunky)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11l-8-8-8.5 8.5a2.12 2.12 0 0 0 0 3l5.5 5.5a2.12 2.12 0 0 0 3 0L19 11z"></path><path d="M5 21h14"></path></svg>
+            <input type="color" id="ribbonFillColor" value="#ffffff">
+          </label>
+        </div>
+      </div>
+      <div class="ribbon-group-title">Písmo & farba</div>
+    </div>
+
+    <!-- Skupina Orámovanie (S nastavením pixelov a vnútorných/vonkajších hraníc) -->
+    <div class="ribbon-group">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <!-- Dropdown orámovania -->
           <div class="border-dropdown-wrapper">
             <button class="ribbon-btn" id="btnBorderDropdown" title="Použiť orámovanie na vybrané bunky">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"></rect><line x1="3" y1="12" x2="21" y2="12"></line><line x1="12" y1="3" x2="12" y2="21"></line></svg>
               <span style="font-size: 0.65rem;">▼</span>
             </button>
             <div class="border-menu" id="borderMenu">
+              <div class="border-menu-header">Základné orámovania</div>
               <div class="border-menu-item" data-border="all">
-                <span class="border-icon-sample" style="border: 1px solid black;"></span>
+                <span class="border-icon-sample border-all"></span>
                 <span>Všetky orámovania</span>
               </div>
-              <div class="border-menu-item" data-border="thick-box">
-                <span class="border-icon-sample" style="border: 2px solid black;"></span>
-                <span>Hrubé vonkajšie orámovanie</span>
+              <div class="border-menu-item" data-border="outer">
+                <span class="border-icon-sample border-outer"></span>
+                <span>Iba vonkajšie orámovanie</span>
               </div>
-              <div class="border-menu-item" data-border="header-thick">
-                <span class="border-icon-sample" style="border-bottom: 2px solid black;"></span>
-                <span>Hrubá čiara pod hlavičkou</span>
+              <div class="border-menu-item" data-border="inner">
+                <span class="border-icon-sample border-inner"></span>
+                <span>Iba vnútorné orámovanie</span>
+              </div>
+              <div class="border-menu-item" data-border="inner-horizontal">
+                <span class="border-icon-sample border-inner-h"></span>
+                <span>Vnútorné vodorovné</span>
+              </div>
+              <div class="border-menu-item" data-border="inner-vertical">
+                <span class="border-icon-sample border-inner-v"></span>
+                <span>Vnútorné zvislé</span>
+              </div>
+              
+              <div class="border-menu-header">Jednotlivé hrany</div>
+              <div class="border-menu-item" data-border="top">
+                <span class="border-icon-sample border-top"></span>
+                <span>Horné orámovanie</span>
+              </div>
+              <div class="border-menu-item" data-border="bottom">
+                <span class="border-icon-sample border-bottom"></span>
+                <span>Dolné orámovanie</span>
+              </div>
+              <div class="border-menu-item" data-border="left">
+                <span class="border-icon-sample border-left"></span>
+                <span>Ľavé orámovanie</span>
+              </div>
+              <div class="border-menu-item" data-border="right">
+                <span class="border-icon-sample border-right"></span>
+                <span>Pravé orámovanie</span>
+              </div>
+
+              <div class="border-menu-header">Špeciálne štýly</div>
+              <div class="border-menu-item" data-border="thick-outer">
+                <span class="border-icon-sample border-thick-outer"></span>
+                <span>Hrubé vonkajšie orámovanie (3px)</span>
               </div>
               <div class="border-menu-item" data-border="thick-bottom">
-                <span class="border-icon-sample" style="border-bottom: 2px solid black;"></span>
-                <span>Hrubé dolné orámovanie</span>
+                <span class="border-icon-sample border-thick-bottom"></span>
+                <span>Hrubé dolné orámovanie (3px)</span>
               </div>
               <div class="border-menu-item" data-border="double-bottom">
-                <span class="border-icon-sample" style="border-bottom: 3px double black;"></span>
+                <span class="border-icon-sample border-double-bottom"></span>
                 <span>Dvojité dolné orámovanie</span>
               </div>
-              <div class="border-menu-item" data-border="none">
-                <span class="border-icon-sample" style="border: none;"></span>
-                <span>Žiadne orámovanie</span>
+              <div class="border-menu-item border-menu-danger" data-border="none">
+                <span class="border-icon-sample border-none"></span>
+                <span>Bez orámovania (Odstrániť)</span>
               </div>
             </div>
           </div>
+
+          <!-- Nastavenie pixelov pre orámovanie -->
+          <div class="ribbon-input-group" title="Hrúbka orámovania v pixeloch (aplikuje sa na vybrané čiary)">
+            <span class="ribbon-label">Hrúbka:</span>
+            <input type="number" id="borderWidthInput" class="ribbon-num-input" value="1" min="1" max="8" step="1">
+            <span class="ribbon-unit">px</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <!-- Výber štýlu čiary -->
+          <select id="borderStyleSelect" class="ribbon-select" style="width: 82px;" title="Štýl čiary">
+            <option value="solid" selected>Plná</option>
+            <option value="double">Dvojitá</option>
+            <option value="dashed">Čiarkovaná</option>
+            <option value="dotted">Bodkovaná</option>
+          </select>
+
+          <!-- Výber farby orámovania -->
+          <label class="ribbon-color-btn" title="Farba orámovania">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12" stroke-width="3"></line></svg>
+            <input type="color" id="borderColorPicker" value="#000000">
+          </label>
         </div>
       </div>
-      <div class="ribbon-group-title">Písmo a rámčeky</div>
+      <div class="ribbon-group-title">Orámovanie (px)</div>
     </div>
 
     <!-- Skupina Zarovnanie a Odsadenie -->
@@ -118,18 +194,47 @@
       <div class="ribbon-group-title">Zarovnanie</div>
     </div>
 
-    <!-- Skupina Výber tabuľky pre Avery -->
+    <!-- Skupina Riadky & Stĺpce (Manipulácia) -->
     <div class="ribbon-group">
-      <button class="ribbon-btn ribbon-btn-lg" id="btnSetExportRange" title="Nastaví aktuálne vybrané bunky ako oblasť nutričnej tabuľky pre Avery">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
-        <span>Použiť výber</span>
-      </button>
-      <div class="ribbon-group-title">Výber pre Avery</div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; gap: 2px;">
+          <button class="ribbon-btn ribbon-btn-sm" id="btnInsertRow" title="Vložiť nový riadok nad označený riadok">+ Riadok</button>
+          <button class="ribbon-btn ribbon-btn-sm" id="btnDeleteRow" title="Zmazať označený riadok">− Riadok</button>
+        </div>
+        <div style="display: flex; gap: 2px;">
+          <button class="ribbon-btn ribbon-btn-sm" id="btnInsertCol" title="Vložiť nový stĺpec naľavo">+ Stĺpec</button>
+          <button class="ribbon-btn ribbon-btn-sm" id="btnDeleteCol" title="Zmazať označený stĺpec">− Stĺpec</button>
+        </div>
+      </div>
+      <div class="ribbon-group-title">Riadky & stĺpce</div>
     </div>
 
-    <!-- Skupina Export a Excel súbory -->
+    <!-- Skupina Úpravy & Vzory -->
+    <div class="ribbon-group">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; gap: 2px;">
+          <button class="ribbon-btn ribbon-btn-sm" id="btnClearContent" title="Vymaže text v označených bunkách (kláves Delete)">Zmazať text</button>
+          <button class="ribbon-btn ribbon-btn-sm" id="btnClearFormat" title="Odstráni formátovanie a orámovanie z výberu">Zmazať formát</button>
+        </div>
+        <div>
+          <button class="ribbon-btn ribbon-btn-sm" id="btnInsertNutritionTemplate" style="width: 100%;" title="Vloží predpripravenú štandardnú tabuľku výživových údajov (EÚ 1169/2011)">Vzor EÚ údajov</button>
+        </div>
+      </div>
+      <div class="ribbon-group-title">Úprava údajov</div>
+    </div>
+
+    <!-- Skupina Oblasť exportu -->
+    <div class="ribbon-group">
+      <button class="ribbon-btn ribbon-btn-lg" id="btnSetExportRange" title="Nastaví aktuálne vybrané bunky ako oblasť pre export tabuľky">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h4M20 3h-4M4 21h4M20 21h-4M3 4v4M21 4v4M3 20v-4M21 20v-4"></path></svg>
+        <span>Nastaviť oblasť</span>
+      </button>
+      <div class="ribbon-group-title">Oblasť exportu</div>
+    </div>
+
+    <!-- Skupina Export a Súbory -->
     <div class="ribbon-group" style="border-right: none;">
-      <button class="ribbon-btn ribbon-btn-lg" id="btnExportSvg" title="Stiahne čistý vektorový SVG súbor (neobmedzene zväčšiteľné v Avery)">
+      <button class="ribbon-btn ribbon-btn-lg" id="btnExportSvg" title="Stiahne čistý vektorový SVG súbor (neobmedzene zväčšiteľné)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
         <span>Stiahnuť SVG</span>
       </button>
@@ -172,15 +277,15 @@
     <!-- Draggable Splitter (Rozťahovač bočnej lišty náhľadu) -->
     <div class="workspace-splitter" id="workspaceSplitter" title="Potiahnite myšou pre roztiahnutie alebo zúženie náhľadu"></div>
 
-    <!-- Bočný panel: Náhľad pre Avery (Roztiahnuteľný) -->
+    <!-- Bočný panel: Náhľad tabuľky (Roztiahnuteľný) -->
     <aside class="avery-preview-drawer" id="averyPreviewDrawer">
       <div class="avery-drawer-header">
         <h3>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-          Náhľad pre Avery (Tlač)
+          Náhľad tabuľky (Tlač)
         </h3>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="avery-drawer-tool-btn" id="btnToggleDrawerExpand" title="Roztiahnuť / Zúžiť náhľad">↔️ Roztiahnuť</button>
+          <button class="avery-drawer-tool-btn" id="btnToggleDrawerExpand" title="Roztiahnuť / Zúžiť náhľad">Roztiahnuť panel</button>
         </div>
       </div>
 
@@ -189,11 +294,13 @@
         <div style="display: flex; align-items: center; gap: 6px;">
           <span style="font-size: 0.78rem; color: #555;">Lupa:</span>
           <select id="previewZoomSelect" class="ribbon-select" style="height: 24px; padding: 1px 4px; font-size: 0.78rem;">
-            <option value="0.8">80%</option>
-            <option value="1.0" selected>100% (Real)</option>
+            <option value="0.7">70%</option>
+            <option value="0.85">85%</option>
+            <option value="1.0" selected>100% (Reálna)</option>
             <option value="1.25">125%</option>
             <option value="1.5">150%</option>
             <option value="2.0">200%</option>
+            <option value="fit">Prispôsobiť</option>
           </select>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
@@ -211,7 +318,7 @@
       <div class="avery-drawer-footer">
         <button class="avery-big-btn" id="btnDrawerCopyAvery" onclick="document.getElementById('btnCopyAvery').click();">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-          Kopírovať pre Avery (Ctrl+V)
+          Kopírovať tabuľku (Ctrl+V)
         </button>
         <div class="avery-sub-btn-group">
           <button class="avery-sub-btn" onclick="document.getElementById('btnExportSvg').click();">Uložiť SVG (Vektor)</button>
@@ -233,7 +340,7 @@
 
     <div class="status-area">
       <span id="statusBarSelection">Pripravené</span>
-      <span id="statusBarRange">Tabuľka: A1:B8</span>
+      <span id="statusBarRange">Export: A1:B8</span>
     </div>
   </footer>
 

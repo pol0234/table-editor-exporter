@@ -1,12 +1,59 @@
-// app.bundle.js - Standalone, zero-dependency Excel-authentic spreadsheet and Avery export engine
+// app.bundle.js - Standalone, zero-dependency Excel-authentic spreadsheet and high-DPI export engine
 (function() {
   'use strict';
 
-  const STORAGE_KEY = 'oco_excel_nutrition_sheets_v2';
-  const DRAWER_WIDTH_KEY = 'oco_avery_drawer_width';
+  const STORAGE_KEY = 'oco_excel_nutrition_sheets_v3';
+  const DRAWER_WIDTH_KEY = 'oco_avery_drawer_width_v3';
+
+  // --- Grid Constants ---
+  const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+  const ROWS_COUNT = 24;
+
+  function colIndex(col) {
+    return COLUMNS.indexOf(col);
+  }
+
+  function parseAddr(addr) {
+    const col = addr.replace(/[0-9]/g, '');
+    const row = parseInt(addr.replace(/[^0-9]/g, ''), 10);
+    return { col, row };
+  }
+
+  // --- Border Normalizer ---
+  function normalizeBorder(b) {
+    if (!b) return { width: 0, style: 'none', color: 'transparent' };
+    if (typeof b === 'object') {
+      const w = Number(b.width) || 0;
+      const s = b.style || (w > 0 ? 'solid' : 'none');
+      const c = b.color || '#000000';
+      return { width: w, style: s, color: c };
+    }
+    if (typeof b === 'string') {
+      if (b === 'thick') return { width: 3, style: 'solid', color: '#000000' };
+      if (b === 'double') return { width: 3, style: 'double', color: '#000000' };
+      if (b === 'thin') return { width: 1, style: 'solid', color: '#000000' };
+      if (b === 'none') return { width: 0, style: 'none', color: 'transparent' };
+      const match = b.match(/^(\d+)px\s+([a-z]+)\s+(.+)$/i);
+      if (match) {
+        return { width: parseInt(match[1], 10), style: match[2], color: match[3] };
+      }
+    }
+    return { width: 0, style: 'none', color: 'transparent' };
+  }
+
+  function getBorderCss(b) {
+    const norm = normalizeBorder(b);
+    if (norm.width <= 0 || norm.style === 'none') {
+      return '1px solid #e1dfdd'; // Default subtle Excel grid border
+    }
+    return `${norm.width}px ${norm.style} ${norm.color}`;
+  }
 
   // --- Initial Default Products Matching User's Excel Sheets ---
   function createDefaultSheets() {
+    const thickBox = { width: 2, style: 'solid', color: '#000000' };
+    const thinInner = { width: 1, style: 'solid', color: '#000000' };
+
     return [
       {
         id: 's_papaya',
@@ -14,22 +61,22 @@
         colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B2': { v: '1372kJ /\n328kcal', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B3': { v: '0,12g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B4': { v: '0,08g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B5': { v: '80,9g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B6': { v: '70,4g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B7': { v: '1,54g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B8': { v: '0,23g', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' }
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B2': { v: '1372kJ /\n328kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B3': { v: '0,12g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B4': { v: '0,08g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B5': { v: '80,9g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B6': { v: '70,4g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B7': { v: '1,54g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B8': { v: '0,23g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       },
@@ -39,22 +86,22 @@
         colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B2': { v: '1420kJ /\n339kcal', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B3': { v: '0,50g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B4': { v: '0,10g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B5': { v: '82,0g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B6': { v: '65,0g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B7': { v: '1,80g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B8': { v: '0,05g', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' }
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B2': { v: '1420kJ /\n339kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B3': { v: '0,50g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B4': { v: '0,10g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B5': { v: '82,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B6': { v: '65,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B7': { v: '1,80g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B8': { v: '0,05g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       },
@@ -64,22 +111,22 @@
         colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B2': { v: '1390kJ /\n332kcal', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B3': { v: '0,20g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B4': { v: '0,05g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B5': { v: '78,0g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B6': { v: '68,0g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B7': { v: '2,10g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B8': { v: '0,15g', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' }
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B2': { v: '1390kJ /\n332kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B3': { v: '0,20g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B4': { v: '0,05g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B5': { v: '78,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B6': { v: '68,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B7': { v: '2,10g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B8': { v: '0,15g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       },
@@ -89,22 +136,22 @@
         colWidths: { A: 220, B: 110, C: 60, D: 60, E: 60 },
         rowHeights: { 1: 26, 2: 38, 3: 24, 4: 24, 5: 24, 6: 24, 7: 24, 8: 24 },
         cells: {
-          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'B1': { v: '100g', bold: true, align: 'center', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thick' },
-          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B2': { v: '1410kJ /\n337kcal', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thick', borderRight: 'thin' },
-          'B3': { v: '0,35g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thick', borderLeft: 'thin', borderRight: 'thick' },
-          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B4': { v: '0,07g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B5': { v: '81,5g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B6': { v: '69,0g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B7': { v: '1,65g', bold: false, align: 'right', borderBottom: 'thin', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' },
-          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thick', borderRight: 'thin' },
-          'B8': { v: '0,18g', bold: false, align: 'right', borderBottom: 'thick', borderTop: 'thin', borderLeft: 'thin', borderRight: 'thick' }
+          'A1': { v: 'Výživové údaje na', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'B1': { v: '100g', bold: true, align: 'center', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thickBox },
+          'A2': { v: 'Energetická hodnota', bold: false, align: 'left', borderBottom: thickBox, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B2': { v: '1410kJ /\n337kcal', bold: false, align: 'right', borderBottom: thickBox, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A3': { v: 'Tuky', bold: false, align: 'left', borderBottom: thinInner, borderTop: thickBox, borderLeft: thickBox, borderRight: thinInner },
+          'B3': { v: '0,35g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thickBox, borderLeft: thinInner, borderRight: thickBox },
+          'A4': { v: 'z toho nasýtené mastné kyseliny', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B4': { v: '0,07g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A5': { v: 'Sacharidy', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B5': { v: '81,5g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A6': { v: 'z toho cukry', bold: false, align: 'left', indent: 18, borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B6': { v: '69,0g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A7': { v: 'Bielkoviny', bold: false, align: 'left', borderBottom: thinInner, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B7': { v: '1,65g', bold: false, align: 'right', borderBottom: thinInner, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox },
+          'A8': { v: 'Soľ', bold: false, align: 'left', borderBottom: thickBox, borderTop: thinInner, borderLeft: thickBox, borderRight: thinInner },
+          'B8': { v: '0,18g', bold: false, align: 'right', borderBottom: thickBox, borderTop: thinInner, borderLeft: thinInner, borderRight: thickBox }
         },
         exportRange: { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 }
       }
@@ -152,11 +199,11 @@
     return s;
   }
 
-  // --- Toast ---
+  // --- Clean Toast (No emojis) ---
   function showToast(msg, isSuccess = true) {
     const el = document.getElementById('toastNotification');
     if (!el) return;
-    el.textContent = (isSuccess ? '✅ ' : 'ℹ️ ') + msg;
+    el.textContent = msg;
     el.style.backgroundColor = isSuccess ? '#107c41' : '#0f548c';
     el.style.display = 'block';
     el.style.opacity = '1';
@@ -165,20 +212,6 @@
       el.style.opacity = '0';
       setTimeout(() => el.style.display = 'none', 300);
     }, 3500);
-  }
-
-  // --- Grid Constants ---
-  const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-  const ROWS_COUNT = 24;
-
-  function colIndex(col) {
-    return COLUMNS.indexOf(col);
-  }
-
-  function parseAddr(addr) {
-    const col = addr.replace(/[0-9]/g, '');
-    const row = parseInt(addr.replace(/[^0-9]/g, ''), 10);
-    return { col, row };
   }
 
   // --- DOM References ---
@@ -196,15 +229,34 @@
   const fontSizeSelect = document.getElementById('ribbonFontSize');
   const boldBtn = document.getElementById('btnBold');
   const italicBtn = document.getElementById('btnItalic');
+  const ribbonTextColor = document.getElementById('ribbonTextColor');
+  const ribbonFillColor = document.getElementById('ribbonFillColor');
+
+  // Border Controls
   const borderDropdownBtn = document.getElementById('btnBorderDropdown');
   const borderMenu = document.getElementById('borderMenu');
+  const borderWidthInput = document.getElementById('borderWidthInput');
+  const borderStyleSelect = document.getElementById('borderStyleSelect');
+  const borderColorPicker = document.getElementById('borderColorPicker');
+
+  // Alignments & Indent
   const alignLeftBtn = document.getElementById('btnAlignLeft');
   const alignCenterBtn = document.getElementById('btnAlignCenter');
   const alignRightBtn = document.getElementById('btnAlignRight');
   const indentIncBtn = document.getElementById('btnIndentInc');
   const indentDecBtn = document.getElementById('btnIndentDec');
-  const btnSetExportRange = document.getElementById('btnSetExportRange');
 
+  // Data Manipulation
+  const btnInsertRow = document.getElementById('btnInsertRow');
+  const btnDeleteRow = document.getElementById('btnDeleteRow');
+  const btnInsertCol = document.getElementById('btnInsertCol');
+  const btnDeleteCol = document.getElementById('btnDeleteCol');
+  const btnClearContent = document.getElementById('btnClearContent');
+  const btnClearFormat = document.getElementById('btnClearFormat');
+  const btnInsertNutritionTemplate = document.getElementById('btnInsertNutritionTemplate');
+
+  // Export & Files
+  const btnSetExportRange = document.getElementById('btnSetExportRange');
   const btnCopyAvery = document.getElementById('btnCopyAvery');
   const btnExportSvg = document.getElementById('btnExportSvg');
   const btnExportPng = document.getElementById('btnExportPng');
@@ -419,6 +471,8 @@
     td.style.fontWeight = cellData.bold ? 'bold' : 'normal';
     td.style.fontStyle = cellData.italic ? 'italic' : 'normal';
     td.style.textAlign = cellData.align || 'left';
+    td.style.color = cellData.textColor || '#000000';
+    td.style.backgroundColor = cellData.fillColor || '';
     td.style.paddingLeft = (cellData.indent ? (8 + cellData.indent) : 6) + 'px';
 
     // Borders
@@ -426,14 +480,6 @@
     td.style.borderTop = getBorderCss(cellData.borderTop);
     td.style.borderLeft = getBorderCss(cellData.borderLeft);
     td.style.borderRight = getBorderCss(cellData.borderRight);
-  }
-
-  function getBorderCss(type) {
-    if (type === 'thick') return '2px solid #000000';
-    if (type === 'double') return '3px double #000000';
-    if (type === 'thin') return '1px solid #000000';
-    if (type === 'none') return '1px solid transparent';
-    return '1px solid #e1dfdd'; // Default grid border
   }
 
   // --- Excel Drag Selection Range Logic ---
@@ -574,6 +620,39 @@
     updatePreview();
   });
 
+  // Text Color & Fill Color
+  if (ribbonTextColor) {
+    ribbonTextColor.addEventListener('input', () => {
+      const color = ribbonTextColor.value;
+      const sheet = getActiveSheet();
+      if (!sheet.cells) sheet.cells = {};
+      getCellsInRange().forEach(item => {
+        if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+        sheet.cells[item.addr].textColor = color;
+        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+        if (td) applyCellStyles(td, sheet.cells[item.addr]);
+      });
+      saveAppState();
+      updatePreview();
+    });
+  }
+
+  if (ribbonFillColor) {
+    ribbonFillColor.addEventListener('input', () => {
+      const color = ribbonFillColor.value;
+      const sheet = getActiveSheet();
+      if (!sheet.cells) sheet.cells = {};
+      getCellsInRange().forEach(item => {
+        if (!sheet.cells[item.addr]) sheet.cells[item.addr] = { v: '' };
+        sheet.cells[item.addr].fillColor = color;
+        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+        if (td) applyCellStyles(td, sheet.cells[item.addr]);
+      });
+      saveAppState();
+      updatePreview();
+    });
+  }
+
   // Alignments for Selection
   alignLeftBtn.addEventListener('click', () => applyRangeProp('align', 'left'));
   alignCenterBtn.addEventListener('click', () => applyRangeProp('align', 'center'));
@@ -650,6 +729,15 @@
     const sR = range.startRow;
     const eR = range.endRow;
 
+    const borderWidth = parseInt(borderWidthInput ? borderWidthInput.value : '1', 10) || 1;
+    const borderStyle = borderStyleSelect ? borderStyleSelect.value : 'solid';
+    const borderColor = borderColorPicker ? borderColorPicker.value : '#000000';
+
+    const userBorder = { width: borderWidth, style: borderStyle, color: borderColor };
+    const thickBorder = { width: 3, style: 'solid', color: borderColor };
+    const doubleBorder = { width: 3, style: 'double', color: borderColor };
+    const noneBorder = { width: 0, style: 'none', color: 'transparent' };
+
     for (let r = sR; r <= eR; r++) {
       for (let c = sC; c <= eC; c++) {
         const addr = `${COLUMNS[c]}${r}`;
@@ -657,26 +745,44 @@
         const cell = sheet.cells[addr];
 
         if (type === 'all') {
-          cell.borderTop = 'thin';
-          cell.borderBottom = 'thin';
-          cell.borderLeft = 'thin';
-          cell.borderRight = 'thin';
-        } else if (type === 'thick-box') {
-          if (r === sR) cell.borderTop = 'thick';
-          if (r === eR) cell.borderBottom = 'thick';
-          if (c === sC) cell.borderLeft = 'thick';
-          if (c === eC) cell.borderRight = 'thick';
-        } else if (type === 'header-thick') {
-          if (r === sR) cell.borderBottom = 'thick';
+          cell.borderTop = Object.assign({}, userBorder);
+          cell.borderBottom = Object.assign({}, userBorder);
+          cell.borderLeft = Object.assign({}, userBorder);
+          cell.borderRight = Object.assign({}, userBorder);
+        } else if (type === 'outer') {
+          if (r === sR) cell.borderTop = Object.assign({}, userBorder);
+          if (r === eR) cell.borderBottom = Object.assign({}, userBorder);
+          if (c === sC) cell.borderLeft = Object.assign({}, userBorder);
+          if (c === eC) cell.borderRight = Object.assign({}, userBorder);
+        } else if (type === 'inner') {
+          if (r > sR) cell.borderTop = Object.assign({}, userBorder);
+          if (c > sC) cell.borderLeft = Object.assign({}, userBorder);
+        } else if (type === 'inner-horizontal') {
+          if (r < eR) cell.borderBottom = Object.assign({}, userBorder);
+        } else if (type === 'inner-vertical') {
+          if (c < eC) cell.borderRight = Object.assign({}, userBorder);
+        } else if (type === 'top') {
+          if (r === sR) cell.borderTop = Object.assign({}, userBorder);
+        } else if (type === 'bottom') {
+          if (r === eR) cell.borderBottom = Object.assign({}, userBorder);
+        } else if (type === 'left') {
+          if (c === sC) cell.borderLeft = Object.assign({}, userBorder);
+        } else if (type === 'right') {
+          if (c === eC) cell.borderRight = Object.assign({}, userBorder);
+        } else if (type === 'thick-outer') {
+          if (r === sR) cell.borderTop = Object.assign({}, thickBorder);
+          if (r === eR) cell.borderBottom = Object.assign({}, thickBorder);
+          if (c === sC) cell.borderLeft = Object.assign({}, thickBorder);
+          if (c === eC) cell.borderRight = Object.assign({}, thickBorder);
         } else if (type === 'thick-bottom') {
-          if (r === eR) cell.borderBottom = 'thick';
+          if (r === eR) cell.borderBottom = Object.assign({}, thickBorder);
         } else if (type === 'double-bottom') {
-          if (r === eR) cell.borderBottom = 'double';
+          if (r === eR) cell.borderBottom = Object.assign({}, doubleBorder);
         } else if (type === 'none') {
-          cell.borderTop = 'none';
-          cell.borderBottom = 'none';
-          cell.borderLeft = 'none';
-          cell.borderRight = 'none';
+          cell.borderTop = Object.assign({}, noneBorder);
+          cell.borderBottom = Object.assign({}, noneBorder);
+          cell.borderLeft = Object.assign({}, noneBorder);
+          cell.borderRight = Object.assign({}, noneBorder);
         }
 
         const td = gridTable.querySelector(`td[data-addr="${addr}"]`);
@@ -687,20 +793,239 @@
     refreshSelectionVisuals();
     saveAppState();
     updatePreview();
-    showToast(`Orámovanie "${type}" bolo použité na výber.`);
+    showToast(`Orámovanie bolo aplikované na vybrané bunky (${borderWidth}px, ${borderStyle}).`);
   }
 
-  // --- Button: Nastaviť výber ako tabuľku pre Avery ---
+  // --- Row & Column Manipulation ---
+  if (btnInsertRow) {
+    btnInsertRow.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      const range = appState.selectionRange || { startRow: 1 };
+      const targetRow = range.startRow;
+
+      const newCells = {};
+      for (const addr in sheet.cells) {
+        const { col, row } = parseAddr(addr);
+        if (row < targetRow) {
+          newCells[addr] = sheet.cells[addr];
+        } else if (row >= targetRow && row < ROWS_COUNT) {
+          newCells[`${col}${row + 1}`] = sheet.cells[addr];
+        }
+      }
+      sheet.cells = newCells;
+
+      if (sheet.exportRange && sheet.exportRange.endRow >= targetRow) {
+        sheet.exportRange.endRow = Math.min(ROWS_COUNT, sheet.exportRange.endRow + 1);
+      }
+
+      saveAppState();
+      renderGrid();
+      updatePreview();
+      showToast(`Riadok bol vložený na pozíciu ${targetRow}.`);
+    });
+  }
+
+  if (btnDeleteRow) {
+    btnDeleteRow.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      const range = appState.selectionRange || { startRow: 1 };
+      const targetRow = range.startRow;
+
+      const newCells = {};
+      for (const addr in sheet.cells) {
+        const { col, row } = parseAddr(addr);
+        if (row < targetRow) {
+          newCells[addr] = sheet.cells[addr];
+        } else if (row > targetRow) {
+          newCells[`${col}${row - 1}`] = sheet.cells[addr];
+        }
+      }
+      sheet.cells = newCells;
+
+      if (sheet.exportRange && sheet.exportRange.endRow > sheet.exportRange.startRow) {
+        if (targetRow <= sheet.exportRange.endRow) {
+          sheet.exportRange.endRow--;
+        }
+      }
+
+      saveAppState();
+      renderGrid();
+      updatePreview();
+      showToast(`Riadok ${targetRow} bol zmazaný.`);
+    });
+  }
+
+  if (btnInsertCol) {
+    btnInsertCol.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      const range = appState.selectionRange || { startCol: 'A' };
+      const targetColIdx = colIndex(range.startCol);
+      if (targetColIdx >= COLUMNS.length - 1) return;
+
+      const newCells = {};
+      for (const addr in sheet.cells) {
+        const { col, row } = parseAddr(addr);
+        const cIdx = colIndex(col);
+        if (cIdx < targetColIdx) {
+          newCells[addr] = sheet.cells[addr];
+        } else if (cIdx >= targetColIdx && cIdx < COLUMNS.length - 1) {
+          newCells[`${COLUMNS[cIdx + 1]}${row}`] = sheet.cells[addr];
+        }
+      }
+      sheet.cells = newCells;
+      saveAppState();
+      renderGrid();
+      updatePreview();
+      showToast(`Nový stĺpec bol vložený pred stĺpec ${range.startCol}.`);
+    });
+  }
+
+  if (btnDeleteCol) {
+    btnDeleteCol.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      const range = appState.selectionRange || { startCol: 'A' };
+      const targetColIdx = colIndex(range.startCol);
+      if (targetColIdx < 0) return;
+
+      const newCells = {};
+      for (const addr in sheet.cells) {
+        const { col, row } = parseAddr(addr);
+        const cIdx = colIndex(col);
+        if (cIdx < targetColIdx) {
+          newCells[addr] = sheet.cells[addr];
+        } else if (cIdx > targetColIdx) {
+          newCells[`${COLUMNS[cIdx - 1]}${row}`] = sheet.cells[addr];
+        }
+      }
+      sheet.cells = newCells;
+      saveAppState();
+      renderGrid();
+      updatePreview();
+      showToast(`Stĺpec ${range.startCol} bol zmazaný.`);
+    });
+  }
+
+  // --- Clear Tools ---
+  function clearContent() {
+    const sheet = getActiveSheet();
+    getCellsInRange().forEach(item => {
+      if (sheet.cells && sheet.cells[item.addr]) {
+        sheet.cells[item.addr].v = '';
+        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+        if (td) td.innerText = '';
+      }
+    });
+    formulaInput.value = '';
+    saveAppState();
+    updatePreview();
+    showToast('Obsah označených buniek bol vymazaný.');
+  }
+
+  function clearFormat() {
+    const sheet = getActiveSheet();
+    getCellsInRange().forEach(item => {
+      if (sheet.cells && sheet.cells[item.addr]) {
+        const val = sheet.cells[item.addr].v || '';
+        sheet.cells[item.addr] = {
+          v: val,
+          bold: false,
+          italic: false,
+          align: 'left',
+          indent: 0,
+          textColor: '#000000',
+          fillColor: '',
+          borderTop: { width: 0, style: 'none' },
+          borderBottom: { width: 0, style: 'none' },
+          borderLeft: { width: 0, style: 'none' },
+          borderRight: { width: 0, style: 'none' }
+        };
+        const td = gridTable.querySelector(`td[data-addr="${item.addr}"]`);
+        if (td) applyCellStyles(td, sheet.cells[item.addr]);
+      }
+    });
+    saveAppState();
+    updatePreview();
+    showToast('Formátovanie a orámovanie bolo odstránené.');
+  }
+
+  if (btnClearContent) btnClearContent.addEventListener('click', clearContent);
+  if (btnClearFormat) btnClearFormat.addEventListener('click', clearFormat);
+
+  // Keyboard Delete key
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+      return;
+    }
+    if (e.key === 'Delete') {
+      clearContent();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      boldBtn.click();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      italicBtn.click();
+    }
+  });
+
+  // --- Insert Standard EU Nutrition Table Template ---
+  if (btnInsertNutritionTemplate) {
+    btnInsertNutritionTemplate.addEventListener('click', () => {
+      const sheet = getActiveSheet();
+      if (!sheet.cells) sheet.cells = {};
+      const template = [
+        { name: 'Výživové údaje na', val: '100g', bold: true, indent: 0, borderB: { width: 2, style: 'solid', color: '#000000' } },
+        { name: 'Energetická hodnota', val: '1372kJ /\n328kcal', bold: false, indent: 0, borderB: { width: 2, style: 'solid', color: '#000000' } },
+        { name: 'Tuky', val: '0,12g', bold: false, indent: 0, borderB: { width: 1, style: 'solid', color: '#000000' } },
+        { name: 'z toho nasýtené mastné kyseliny', val: '0,08g', bold: false, indent: 18, borderB: { width: 1, style: 'solid', color: '#000000' } },
+        { name: 'Sacharidy', val: '80,9g', bold: false, indent: 0, borderB: { width: 1, style: 'solid', color: '#000000' } },
+        { name: 'z toho cukry', val: '70,4g', bold: false, indent: 18, borderB: { width: 1, style: 'solid', color: '#000000' } },
+        { name: 'Bielkoviny', val: '1,54g', bold: false, indent: 0, borderB: { width: 1, style: 'solid', color: '#000000' } },
+        { name: 'Soľ', val: '0,23g', bold: false, indent: 0, borderB: { width: 2, style: 'solid', color: '#000000' } }
+      ];
+
+      template.forEach((item, idx) => {
+        const row = idx + 1;
+        sheet.cells[`A${row}`] = {
+          v: item.name,
+          bold: item.bold,
+          align: idx === 0 ? 'center' : 'left',
+          indent: item.indent,
+          borderTop: { width: idx === 0 ? 2 : 1, style: 'solid', color: '#000000' },
+          borderBottom: item.borderB,
+          borderLeft: { width: 2, style: 'solid', color: '#000000' },
+          borderRight: { width: 1, style: 'solid', color: '#000000' }
+        };
+        sheet.cells[`B${row}`] = {
+          v: item.val,
+          bold: item.bold,
+          align: idx === 0 ? 'center' : 'right',
+          indent: 0,
+          borderTop: { width: idx === 0 ? 2 : 1, style: 'solid', color: '#000000' },
+          borderBottom: item.borderB,
+          borderLeft: { width: 1, style: 'solid', color: '#000000' },
+          borderRight: { width: 2, style: 'solid', color: '#000000' }
+        };
+      });
+
+      sheet.exportRange = { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
+      saveAppState();
+      renderGrid();
+      updatePreview();
+      showToast('Vzor výživových údajov (EÚ 1169/2011) bol úspešne vložený.');
+    });
+  }
+
+  // --- Button: Nastaviť výber ako oblasť pre export ---
   if (btnSetExportRange) {
     btnSetExportRange.addEventListener('click', () => {
       const sheet = getActiveSheet();
       sheet.exportRange = Object.assign({}, appState.selectionRange);
       if (statusBarRange) {
-        statusBarRange.textContent = `Tabuľka: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
+        statusBarRange.textContent = `Export: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
       }
       saveAppState();
       updatePreview();
-      showToast(`Oblasť pre Avery nastavená na ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}!`);
+      showToast(`Oblasť exportu nastavená na ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}.`);
     });
   }
 
@@ -733,8 +1058,7 @@
       if (!sheet.colWidths) sheet.colWidths = {};
       sheet.colWidths[colName] = newWidth;
 
-      // Update colgroup width directly
-      const colIdx = COLUMNS.indexOf(colName) + 1; // +1 for row number col
+      const colIdx = COLUMNS.indexOf(colName) + 1;
       const colEl = gridTable.querySelectorAll('col')[colIdx];
       if (colEl) colEl.style.width = newWidth + 'px';
     });
@@ -749,7 +1073,7 @@
     });
   }
 
-  // --- Interactive Splitter for Avery Preview Drawer ---
+  // --- Interactive Splitter for Preview Drawer ---
   if (workspaceSplitter && averyPreviewDrawer) {
     let isDraggingSplitter = false;
     let startMouseX = 0;
@@ -767,9 +1091,12 @@
 
     window.addEventListener('mousemove', (e) => {
       if (!isDraggingSplitter) return;
-      const deltaX = startMouseX - e.clientX; // Dragging left increases width
-      const newWidth = Math.min(850, Math.max(320, startDrawerW + deltaX));
+      const deltaX = startMouseX - e.clientX;
+      const newWidth = Math.min(1200, Math.max(320, startDrawerW + deltaX));
       averyPreviewDrawer.style.width = newWidth + 'px';
+      if (previewZoomSelect && previewZoomSelect.value === 'fit') {
+        applyFitZoom();
+      }
     });
 
     window.addEventListener('mouseup', () => {
@@ -783,25 +1110,42 @@
     });
   }
 
-  // Toggle Drawer Expand Button
+  // Toggle Drawer Expand Button (Clean labels, no emojis)
   if (btnToggleDrawerExpand) {
     btnToggleDrawerExpand.addEventListener('click', () => {
       const isExpanded = averyPreviewDrawer.classList.toggle('expanded');
-      btnToggleDrawerExpand.textContent = isExpanded ? '← Zúžiť' : '↔️ Roztiahnuť';
+      btnToggleDrawerExpand.textContent = isExpanded ? 'Zúžiť panel' : 'Roztiahnuť panel';
       if (!isExpanded) {
-        averyPreviewDrawer.style.width = '420px';
+        averyPreviewDrawer.style.width = '440px';
       } else {
-        averyPreviewDrawer.style.width = '640px';
+        averyPreviewDrawer.style.width = '750px';
       }
       localStorage.setItem(DRAWER_WIDTH_KEY, averyPreviewDrawer.offsetWidth);
+      if (previewZoomSelect && previewZoomSelect.value === 'fit') {
+        applyFitZoom();
+      }
     });
+  }
+
+  function applyFitZoom() {
+    if (!previewViewport || !previewSvgBox) return;
+    const svgEl = previewSvgBox.querySelector('svg');
+    if (!svgEl) return;
+    const availW = previewViewport.clientWidth - 48;
+    const svgW = parseFloat(svgEl.getAttribute('width')) || 330;
+    const fitScale = Math.min(2.0, Math.max(0.4, availW / svgW));
+    previewSvgBox.style.transform = `scale(${fitScale.toFixed(2)})`;
   }
 
   // Zoom Selector
   if (previewZoomSelect && previewSvgBox) {
     previewZoomSelect.addEventListener('change', () => {
-      const scale = parseFloat(previewZoomSelect.value);
-      previewSvgBox.style.transform = `scale(${scale})`;
+      if (previewZoomSelect.value === 'fit') {
+        applyFitZoom();
+      } else {
+        const scale = parseFloat(previewZoomSelect.value);
+        previewSvgBox.style.transform = `scale(${scale})`;
+      }
     });
   }
 
@@ -820,7 +1164,7 @@
     });
   }
 
-  // --- SVG Live Preview Generator ---
+  // --- SVG Live Preview Generator With Custom Pixel Borders ---
   function generateTableSVG(sheet) {
     const range = sheet.exportRange || { startCol: 'A', startRow: 1, endCol: 'B', endRow: 8 };
     const colWidths = sheet.colWidths || {};
@@ -852,22 +1196,38 @@
 
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}">\n`;
     svg += `<defs>\n<style>\n`;
-    svg += `  text { font-family: Calibri, Arial, sans-serif; font-size: 13px; fill: #000000; dominant-baseline: middle; }\n`;
+    svg += `  text { font-family: Calibri, Arial, sans-serif; font-size: 13px; dominant-baseline: middle; }\n`;
     svg += `  .bold { font-weight: bold; }\n`;
+    svg += `  .italic { font-style: italic; }\n`;
     svg += `  .center { text-anchor: middle; }\n`;
     svg += `  .right { text-anchor: end; }\n`;
     svg += `</style>\n</defs>\n`;
 
-    // Background
+    // Background base
     svg += `<rect x="${margin}" y="${margin}" width="${totalW}" height="${totalH}" fill="#ffffff" />\n`;
 
-    // Render cells
+    // 1. Cell fills
+    rowPositions.forEach(rp => {
+      const r = rp.row;
+      const y = rp.y + margin;
+      const h = rp.height;
+      activeCols.forEach(ac => {
+        const addr = `${ac.col}${r}`;
+        const cell = (sheet.cells && sheet.cells[addr]) || {};
+        if (cell.fillColor && cell.fillColor !== '#ffffff' && cell.fillColor !== 'transparent') {
+          const cellX = margin + ac.x;
+          svg += `<rect x="${cellX}" y="${y}" width="${ac.width}" height="${h}" fill="${cell.fillColor}" />\n`;
+        }
+      });
+    });
+
+    // 2. Cell texts
     rowPositions.forEach(rp => {
       const r = rp.row;
       const y = rp.y + margin;
       const h = rp.height;
 
-      activeCols.forEach((ac, colIndexInTable) => {
+      activeCols.forEach(ac => {
         const addr = `${ac.col}${r}`;
         const cell = (sheet.cells && sheet.cells[addr]) || { v: '' };
         const cellX = margin + ac.x;
@@ -875,16 +1235,17 @@
 
         const textY = y + h / 2;
         const indentX = cell.indent || 0;
-        const textClass = cell.bold ? 'bold' : '';
+        const textClass = (cell.bold ? 'bold ' : '') + (cell.italic ? 'italic ' : '');
+        const textColor = cell.textColor || '#000000';
 
         const valLines = String(cell.v || '').split('\n');
         if (valLines.length === 1) {
           if (cell.align === 'center') {
-            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + cellW / 2}" y="${textY}" class="center ${textClass}" fill="${textColor}">${escapeXml(cell.v)}</text>\n`;
           } else if (cell.align === 'right') {
-            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + cellW - 8}" y="${textY}" class="right ${textClass}" fill="${textColor}">${escapeXml(cell.v)}</text>\n`;
           } else {
-            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}">${escapeXml(cell.v)}</text>\n`;
+            svg += `<text x="${cellX + 8 + indentX}" y="${textY}" class="${textClass}" fill="${textColor}">${escapeXml(cell.v)}</text>\n`;
           }
         } else {
           // Multiline cell (kJ / kcal)
@@ -892,29 +1253,61 @@
           const posX = cell.align === 'right' ? (cellX + cellW - 8) : (cellX + 8 + indentX);
           const anchorClass = cell.align === 'right' ? 'right ' + textClass : textClass;
 
-          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}">`;
+          svg += `<text x="${posX}" y="${startY}" class="${anchorClass}" fill="${textColor}">`;
           valLines.forEach((line, idx) => {
             svg += `<tspan x="${posX}" dy="${idx === 0 ? 0 : 15}">${escapeXml(line)}</tspan>`;
           });
           svg += `</text>\n`;
         }
-
-        // Horizontal bottom border
-        if (cell.borderBottom && cell.borderBottom !== 'none') {
-          const strokeW = cell.borderBottom === 'thick' ? 2 : (cell.borderBottom === 'double' ? 3 : 1);
-          svg += `<line x1="${cellX}" y1="${y + h}" x2="${cellX + cellW}" y2="${y + h}" stroke="#000000" stroke-width="${strokeW}" />\n`;
-        }
       });
     });
 
-    // Vertical Divider between columns
-    for (let c = 1; c < activeCols.length; c++) {
-      const divX = margin + activeCols[c].x;
-      svg += `<line x1="${divX}" y1="${margin}" x2="${divX}" y2="${margin + totalH}" stroke="#000000" stroke-width="1" />\n`;
+    // 3. Exact Cell Borders (Custom px thickness, style, color)
+    function renderSvgBorder(x1, y1, x2, y2, b) {
+      const norm = normalizeBorder(b);
+      if (norm.width <= 0 || norm.style === 'none') return '';
+      if (norm.style === 'double') {
+        const offset = 1.5;
+        const isHoriz = Math.abs(y1 - y2) < 0.1;
+        if (isHoriz) {
+          return `<line x1="${x1}" y1="${y1 - offset}" x2="${x2}" y2="${y2 - offset}" stroke="${norm.color}" stroke-width="1" />\n` +
+                 `<line x1="${x1}" y1="${y1 + offset}" x2="${x2}" y2="${y2 + offset}" stroke="${norm.color}" stroke-width="1" />\n`;
+        } else {
+          return `<line x1="${x1 - offset}" y1="${y1}" x2="${x2 - offset}" y2="${y2}" stroke="${norm.color}" stroke-width="1" />\n` +
+                 `<line x1="${x1 + offset}" y1="${y1}" x2="${x2 + offset}" y2="${y2}" stroke="${norm.color}" stroke-width="1" />\n`;
+        }
+      }
+      let dash = '';
+      if (norm.style === 'dashed') dash = ' stroke-dasharray="4,3"';
+      if (norm.style === 'dotted') dash = ' stroke-dasharray="1,2"';
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${norm.color}" stroke-width="${norm.width}"${dash} />\n`;
     }
 
-    // Outer Box Border
-    svg += `<rect x="${margin}" y="${margin}" width="${totalW}" height="${totalH}" fill="none" stroke="#000000" stroke-width="2" />\n`;
+    rowPositions.forEach(rp => {
+      const r = rp.row;
+      const y = rp.y + margin;
+      const h = rp.height;
+
+      activeCols.forEach(ac => {
+        const addr = `${ac.col}${r}`;
+        const cell = (sheet.cells && sheet.cells[addr]) || {};
+        const cellX = margin + ac.x;
+        const cellW = ac.width;
+
+        if (cell.borderBottom) {
+          svg += renderSvgBorder(cellX, y + h, cellX + cellW, y + h, cell.borderBottom);
+        }
+        if (cell.borderTop) {
+          svg += renderSvgBorder(cellX, y, cellX + cellW, y, cell.borderTop);
+        }
+        if (cell.borderLeft) {
+          svg += renderSvgBorder(cellX, y, cellX, y + h, cell.borderLeft);
+        }
+        if (cell.borderRight) {
+          svg += renderSvgBorder(cellX + cellW, y, cellX + cellW, y + h, cell.borderRight);
+        }
+      });
+    });
 
     svg += `</svg>`;
     return { svg, width: svgW, height: svgH };
@@ -936,8 +1329,11 @@
     if (previewSvgBox) {
       previewSvgBox.innerHTML = svg;
     }
+    if (previewZoomSelect && previewZoomSelect.value === 'fit') {
+      applyFitZoom();
+    }
     if (statusBarRange && sheet.exportRange) {
-      statusBarRange.textContent = `Tabuľka pre Avery: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
+      statusBarRange.textContent = `Export: ${sheet.exportRange.startCol}${sheet.exportRange.startRow}:${sheet.exportRange.endCol}${sheet.exportRange.endRow}`;
     }
   }
 
@@ -966,13 +1362,13 @@
       .replace(/\s+/g, '_');
   }
 
-  // 1. Copy to Clipboard (for Avery Ctrl+V)
+  // 1. Copy to Clipboard (Clean, no emojis)
   btnCopyAvery.addEventListener('click', async () => {
     const sheet = getActiveSheet();
     const { svg, width, height } = generateTableSVG(sheet);
 
     try {
-      showToast('Generujem obrázok pre Avery...');
+      showToast('Generujem obrázok tabuľky...');
       const canvas = document.createElement('canvas');
       const scale = 4; // 300 DPI high resolution
       canvas.width = width * scale;
@@ -995,17 +1391,17 @@
             if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
               const item = new ClipboardItem({ 'image/png': pngBlob });
               await navigator.clipboard.write([item]);
-              showToast('Skopírované! V programe Avery stačí stlačiť Ctrl + V 🎉', true);
+              showToast('Skopírované! V programe môžete vložiť cez Ctrl + V.', true);
             } else {
               throw new Error('ClipboardItem nepodporované');
             }
           } catch (clipErr) {
-            // Fallback download if clipboard access is blocked
+            // Fallback download if clipboard is restricted
             const a = document.createElement('a');
             a.href = URL.createObjectURL(pngBlob);
             a.download = sanitizeName(sheet.name) + '.png';
             a.click();
-            showToast('Obrázok stiahnutý ako PNG (otvorte v Avery).', true);
+            showToast('Obrázok stiahnutý ako PNG.', true);
           }
         }, 'image/png');
       };
@@ -1029,7 +1425,7 @@
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast(`Vektorový súbor "${sheet.name}.svg" bol stiahnutý!`);
+    showToast(`Vektorový súbor "${sheet.name}.svg" bol stiahnutý.`);
   });
 
   // 3. Download PNG (300 DPI)
@@ -1057,7 +1453,7 @@
         a.href = URL.createObjectURL(pngBlob);
         a.download = sanitizeName(sheet.name) + '_300DPI.png';
         a.click();
-        showToast(`Tlačový obrázok "${sheet.name}_300DPI.png" bol stiahnutý!`);
+        showToast(`Tlačový obrázok "${sheet.name}_300DPI.png" bol stiahnutý.`);
       }, 'image/png');
     };
     img.src = url;
@@ -1093,7 +1489,6 @@
           newSheet.name = sheetName;
           newSheet.cells = {};
 
-          // Read cells
           for (const key in ws) {
             if (key.startsWith('!')) continue;
             const val = ws[key] ? (ws[key].w || ws[key].v || '') : '';
@@ -1104,10 +1499,10 @@
                 bold: key.endsWith('1'),
                 align: key.startsWith('B') ? 'right' : 'left',
                 indent: isIndent ? 18 : 0,
-                borderBottom: key.endsWith('1') ? 'thick' : 'thin',
-                borderTop: 'thin',
-                borderLeft: key.startsWith('A') ? 'thick' : 'thin',
-                borderRight: key.startsWith('B') ? 'thick' : 'thin'
+                borderBottom: key.endsWith('1') ? { width: 2, style: 'solid', color: '#000000' } : { width: 1, style: 'solid', color: '#000000' },
+                borderTop: { width: 1, style: 'solid', color: '#000000' },
+                borderLeft: key.startsWith('A') ? { width: 2, style: 'solid', color: '#000000' } : { width: 1, style: 'solid', color: '#000000' },
+                borderRight: key.startsWith('B') ? { width: 2, style: 'solid', color: '#000000' } : { width: 1, style: 'solid', color: '#000000' }
               };
             }
           }
@@ -1122,7 +1517,7 @@
           renderSheetTabs();
           renderGrid();
           updatePreview();
-          showToast(`Úspešne načítaných ${importedSheets.length} hárkov z Excelu!`);
+          showToast(`Úspešne načítaných ${importedSheets.length} hárkov z Excelu.`);
         }
       } catch (err) {
         console.error(err);
