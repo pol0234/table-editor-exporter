@@ -1,7 +1,7 @@
 {
-  "name": "oco-nutrition-tables",
+  "name": "table-editor-exporter",
   "version": "1.0.0",
-  "description": "Nutrition table generator and Avery exporter with authentic Excel UI",
+  "description": "Professional spreadsheet table editor with ultra-high resolution export for SVG, PNG, and JPG",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",

@@ -659,6 +659,10 @@
     // Top-left corner
     const cornerTh = document.createElement('th');
     cornerTh.className = 'grid-corner-cell';
+    cornerTh.title = 'Vybrať celú tabuľku';
+    cornerTh.addEventListener('click', () => {
+      updateSelectionRange('A', 1, COLUMNS[COLUMNS.length - 1], ROWS_COUNT);
+    });
     headerRow.appendChild(cornerTh);
 
     COLUMNS.forEach(col => {
@@ -671,6 +675,10 @@
         <span>${col}</span>
         <div class="col-resize-handle" data-col="${col}" title="Potiahnutím myšou zmeníte šírku stĺpca ${col}"></div>
       `;
+      th.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('col-resize-handle')) return;
+        updateSelectionRange(col, 1, col, ROWS_COUNT);
+      });
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -694,6 +702,10 @@
         <span>${r}</span>
         <div class="row-resize-handle" data-row="${r}" title="Potiahnutím myšou zmeníte výšku riadku ${r}"></div>
       `;
+      th.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('row-resize-handle')) return;
+        updateSelectionRange('A', r, COLUMNS[COLUMNS.length - 1], r);
+      });
       tr.appendChild(th);
 
       // Data Cells
@@ -1414,115 +1426,222 @@
   }
 
   // --- Row & Column Manipulation ---
-  if (btnInsertRow) {
-    btnInsertRow.addEventListener('click', () => {
-      recordHistory();
-      const sheet = getActiveSheet();
-      const range = appState.selectionRange || { startRow: 1 };
-      const targetRow = range.startRow;
+  function insertRowAt(rowToInsert) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    const range = appState.selectionRange || { startRow: 1 };
+    const targetRow = (typeof rowToInsert === 'number') ? rowToInsert : range.startRow;
+    if (targetRow < 1 || targetRow >= ROWS_COUNT) return;
 
-      const newCells = {};
-      for (const addr in sheet.cells) {
-        const { col, row } = parseAddr(addr);
-        if (row < targetRow) {
-          newCells[addr] = sheet.cells[addr];
-        } else if (row >= targetRow && row < ROWS_COUNT) {
-          newCells[`${col}${row + 1}`] = sheet.cells[addr];
+    // Shift cells down
+    const newCells = {};
+    for (const addr in sheet.cells) {
+      const { col, row } = parseAddr(addr);
+      if (row < targetRow) {
+        newCells[addr] = sheet.cells[addr];
+      } else if (row >= targetRow && row < ROWS_COUNT) {
+        newCells[`${col}${row + 1}`] = sheet.cells[addr];
+      }
+    }
+    sheet.cells = newCells;
+
+    // Shift rowHeights down
+    if (sheet.rowHeights) {
+      const newHeights = {};
+      for (let r = 1; r <= ROWS_COUNT; r++) {
+        if (r < targetRow) {
+          if (sheet.rowHeights[r]) newHeights[r] = sheet.rowHeights[r];
+        } else if (r === targetRow) {
+          newHeights[r] = 24;
+        } else {
+          if (sheet.rowHeights[r - 1]) newHeights[r] = sheet.rowHeights[r - 1];
         }
       }
-      sheet.cells = newCells;
+      sheet.rowHeights = newHeights;
+    }
 
-      if (sheet.exportRange && sheet.exportRange.endRow >= targetRow) {
-        sheet.exportRange.endRow = Math.min(ROWS_COUNT, sheet.exportRange.endRow + 1);
+    // Expand exportRange
+    if (sheet.exportRange && sheet.exportRange.endRow >= targetRow) {
+      sheet.exportRange.endRow = Math.min(ROWS_COUNT, sheet.exportRange.endRow + 1);
+    }
+
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Riadok bol vložený na pozíciu ${targetRow}.`);
+  }
+
+  function deleteRowAt(rowToDelete) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    const range = appState.selectionRange || { startRow: 1 };
+    const targetRow = (typeof rowToDelete === 'number') ? rowToDelete : range.startRow;
+    if (targetRow < 1) return;
+
+    // Shift cells up
+    const newCells = {};
+    for (const addr in sheet.cells) {
+      const { col, row } = parseAddr(addr);
+      if (row < targetRow) {
+        newCells[addr] = sheet.cells[addr];
+      } else if (row > targetRow) {
+        newCells[`${col}${row - 1}`] = sheet.cells[addr];
       }
+    }
+    sheet.cells = newCells;
 
-      saveAppState();
-      renderGrid();
-      updatePreview();
-      showToast(`Riadok bol vložený na pozíciu ${targetRow}.`);
+    // Shift rowHeights up
+    if (sheet.rowHeights) {
+      const newHeights = {};
+      for (let r = 1; r <= ROWS_COUNT; r++) {
+        if (r < targetRow) {
+          if (sheet.rowHeights[r]) newHeights[r] = sheet.rowHeights[r];
+        } else if (r < ROWS_COUNT) {
+          if (sheet.rowHeights[r + 1]) newHeights[r] = sheet.rowHeights[r + 1];
+        }
+      }
+      sheet.rowHeights = newHeights;
+    }
+
+    // Shrink exportRange
+    if (sheet.exportRange && sheet.exportRange.endRow > sheet.exportRange.startRow) {
+      if (targetRow <= sheet.exportRange.endRow) {
+        sheet.exportRange.endRow--;
+      }
+    }
+
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Riadok ${targetRow} bol zmazaný.`);
+  }
+
+  function insertColumnAt(colToInsert) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    const range = appState.selectionRange || { startCol: 'A' };
+    const targetCol = colToInsert || range.startCol;
+    const targetColIdx = colIndex(targetCol);
+    if (targetColIdx < 0 || targetColIdx >= COLUMNS.length - 1) return;
+
+    // Shift cells right
+    const newCells = {};
+    for (const addr in sheet.cells) {
+      const { col, row } = parseAddr(addr);
+      const cIdx = colIndex(col);
+      if (cIdx < targetColIdx) {
+        newCells[addr] = sheet.cells[addr];
+      } else if (cIdx >= targetColIdx && cIdx < COLUMNS.length - 1) {
+        newCells[`${COLUMNS[cIdx + 1]}${row}`] = sheet.cells[addr];
+      }
+    }
+    sheet.cells = newCells;
+
+    // Shift colWidths right
+    if (sheet.colWidths) {
+      const newWidths = {};
+      COLUMNS.forEach((c, idx) => {
+        if (idx < targetColIdx) {
+          if (sheet.colWidths[c]) newWidths[c] = sheet.colWidths[c];
+        } else if (idx === targetColIdx) {
+          newWidths[c] = 70; // default for newly inserted column
+        } else if (idx > targetColIdx) {
+          const prevCol = COLUMNS[idx - 1];
+          if (sheet.colWidths[prevCol]) newWidths[c] = sheet.colWidths[prevCol];
+        }
+      });
+      sheet.colWidths = newWidths;
+    }
+
+    // Adjust exportRange
+    if (sheet.exportRange) {
+      const sIdx = colIndex(sheet.exportRange.startCol);
+      const eIdx = colIndex(sheet.exportRange.endCol);
+      if (targetColIdx <= eIdx && eIdx < COLUMNS.length - 1) {
+        sheet.exportRange.endCol = COLUMNS[eIdx + 1];
+      }
+      if (targetColIdx < sIdx && sIdx < COLUMNS.length - 1) {
+        sheet.exportRange.startCol = COLUMNS[sIdx + 1];
+      }
+    }
+
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Nový stĺpec bol vložený na pozíciu ${targetCol}.`);
+  }
+
+  function deleteColumnAt(colToDelete) {
+    recordHistory();
+    const sheet = getActiveSheet();
+    const range = appState.selectionRange || { startCol: 'A' };
+    const targetCol = colToDelete || range.startCol;
+    const targetColIdx = colIndex(targetCol);
+    if (targetColIdx < 0) return;
+
+    // Shift cells left
+    const newCells = {};
+    for (const addr in sheet.cells) {
+      const { col, row } = parseAddr(addr);
+      const cIdx = colIndex(col);
+      if (cIdx < targetColIdx) {
+        newCells[addr] = sheet.cells[addr];
+      } else if (cIdx > targetColIdx) {
+        newCells[`${COLUMNS[cIdx - 1]}${row}`] = sheet.cells[addr];
+      }
+    }
+    sheet.cells = newCells;
+
+    // Shift colWidths left
+    if (sheet.colWidths) {
+      const newWidths = {};
+      COLUMNS.forEach((c, idx) => {
+        if (idx < targetColIdx) {
+          if (sheet.colWidths[c]) newWidths[c] = sheet.colWidths[c];
+        } else if (idx < COLUMNS.length - 1) {
+          const nextCol = COLUMNS[idx + 1];
+          if (sheet.colWidths[nextCol]) newWidths[c] = sheet.colWidths[nextCol];
+        }
+      });
+      sheet.colWidths = newWidths;
+    }
+
+    // Adjust exportRange
+    if (sheet.exportRange) {
+      const sIdx = colIndex(sheet.exportRange.startCol);
+      const eIdx = colIndex(sheet.exportRange.endCol);
+      if (eIdx > sIdx && targetColIdx <= eIdx) {
+        sheet.exportRange.endCol = COLUMNS[Math.max(sIdx, eIdx - 1)];
+      }
+    }
+
+    saveAppState();
+    renderGrid();
+    updatePreview();
+    showToast(`Stĺpec ${targetCol} bol zmazaný.`);
+  }
+
+  if (btnInsertRow) {
+    btnInsertRow.addEventListener('click', () => {
+      insertRowAt();
     });
   }
 
   if (btnDeleteRow) {
     btnDeleteRow.addEventListener('click', () => {
-      recordHistory();
-      const sheet = getActiveSheet();
-      const range = appState.selectionRange || { startRow: 1 };
-      const targetRow = range.startRow;
-
-      const newCells = {};
-      for (const addr in sheet.cells) {
-        const { col, row } = parseAddr(addr);
-        if (row < targetRow) {
-          newCells[addr] = sheet.cells[addr];
-        } else if (row > targetRow) {
-          newCells[`${col}${row - 1}`] = sheet.cells[addr];
-        }
-      }
-      sheet.cells = newCells;
-
-      if (sheet.exportRange && sheet.exportRange.endRow > sheet.exportRange.startRow) {
-        if (targetRow <= sheet.exportRange.endRow) {
-          sheet.exportRange.endRow--;
-        }
-      }
-
-      saveAppState();
-      renderGrid();
-      updatePreview();
-      showToast(`Riadok ${targetRow} bol zmazaný.`);
+      deleteRowAt();
     });
   }
 
   if (btnInsertCol) {
     btnInsertCol.addEventListener('click', () => {
-      recordHistory();
-      const sheet = getActiveSheet();
-      const range = appState.selectionRange || { startCol: 'A' };
-      const targetColIdx = colIndex(range.startCol);
-      if (targetColIdx >= COLUMNS.length - 1) return;
-
-      const newCells = {};
-      for (const addr in sheet.cells) {
-        const { col, row } = parseAddr(addr);
-        const cIdx = colIndex(col);
-        if (cIdx < targetColIdx) {
-          newCells[addr] = sheet.cells[addr];
-        } else if (cIdx >= targetColIdx && cIdx < COLUMNS.length - 1) {
-          newCells[`${COLUMNS[cIdx + 1]}${row}`] = sheet.cells[addr];
-        }
-      }
-      sheet.cells = newCells;
-      saveAppState();
-      renderGrid();
-      updatePreview();
-      showToast(`Nový stĺpec bol vložený pred stĺpec ${range.startCol}.`);
+      insertColumnAt();
     });
   }
 
   if (btnDeleteCol) {
     btnDeleteCol.addEventListener('click', () => {
-      recordHistory();
-      const sheet = getActiveSheet();
-      const range = appState.selectionRange || { startCol: 'A' };
-      const targetColIdx = colIndex(range.startCol);
-      if (targetColIdx < 0) return;
-
-      const newCells = {};
-      for (const addr in sheet.cells) {
-        const { col, row } = parseAddr(addr);
-        const cIdx = colIndex(col);
-        if (cIdx < targetColIdx) {
-          newCells[addr] = sheet.cells[addr];
-        } else if (cIdx > targetColIdx) {
-          newCells[`${COLUMNS[cIdx - 1]}${row}`] = sheet.cells[addr];
-        }
-      }
-      sheet.cells = newCells;
-      saveAppState();
-      renderGrid();
-      updatePreview();
-      showToast(`Stĺpec ${range.startCol} bol zmazaný.`);
+      deleteColumnAt();
     });
   }
 
@@ -2347,11 +2466,26 @@
     if (!previewViewport || !previewSvgBox) return;
     const svgEl = previewSvgBox.querySelector('svg');
     if (!svgEl) return;
-    const availW = previewViewport.clientWidth - 48;
+    // Calculate available width and height with safe padding
+    const availW = Math.max(80, previewViewport.clientWidth - 40);
+    const availH = Math.max(80, previewViewport.clientHeight - 40);
     const svgW = parseFloat(svgEl.getAttribute('width')) || 330;
-    const fitScale = Math.min(2.0, Math.max(0.4, availW / svgW));
-    previewSvgBox.style.transform = `scale(${fitScale.toFixed(2)})`;
+    const svgH = parseFloat(svgEl.getAttribute('height')) || 300;
+    
+    // Scale must fit both width and height
+    const scaleW = availW / svgW;
+    const scaleH = availH / svgH;
+    const fitScale = Math.min(1.0, scaleW, scaleH);
+    const clampedScale = Math.max(0.1, fitScale);
+    previewSvgBox.style.transform = `scale(${clampedScale.toFixed(2)})`;
+    previewSvgBox.style.transformOrigin = 'top center';
   }
+
+  window.addEventListener('resize', () => {
+    if (previewZoomSelect && previewZoomSelect.value === 'fit') {
+      applyFitZoom();
+    }
+  });
 
   // Zoom Selector
   if (previewZoomSelect && previewSvgBox) {
@@ -2361,6 +2495,7 @@
       } else {
         const scale = parseFloat(previewZoomSelect.value);
         previewSvgBox.style.transform = `scale(${scale})`;
+        previewSvgBox.style.transformOrigin = 'top center';
       }
     });
   }
@@ -2423,32 +2558,48 @@
     });
   }
 
-  // --- Excel Authentic Context Menu (Right-Click on Grid Cells) ---
+  // --- Excel Authentic Context Menu (Right-Click on Grid Cells & Headers) ---
   if (gridTable && excelContextMenu) {
     gridTable.addEventListener('contextmenu', (e) => {
+      const thCol = e.target.closest('th.grid-header-col');
+      const thRow = e.target.closest('th.grid-header-row');
       const td = e.target.closest('td.grid-cell');
-      if (!td) return;
+      if (!td && !thCol && !thRow) return;
       e.preventDefault();
 
-      const col = td.dataset.col;
-      const row = parseInt(td.dataset.row, 10);
-      if (!col || isNaN(row)) return;
+      let targetCellAddr = 'A1';
 
-      // Check if clicked cell is within current selection
-      const cur = appState.selectionRange;
-      const sC = Math.min(colIndex(cur.startCol), colIndex(cur.endCol));
-      const eC = Math.max(colIndex(cur.startCol), colIndex(cur.endCol));
-      const sR = Math.min(cur.startRow, cur.endRow);
-      const eR = Math.max(cur.startRow, cur.endRow);
-      const cIdx = colIndex(col);
+      if (thCol) {
+        const col = thCol.dataset.col;
+        if (!col) return;
+        updateSelectionRange(col, 1, col, ROWS_COUNT);
+        targetCellAddr = `${col}1`;
+      } else if (thRow) {
+        const row = parseInt(thRow.dataset.row, 10);
+        if (isNaN(row)) return;
+        updateSelectionRange('A', row, COLUMNS[COLUMNS.length - 1], row);
+        targetCellAddr = `A${row}`;
+      } else if (td) {
+        const col = td.dataset.col;
+        const row = parseInt(td.dataset.row, 10);
+        if (!col || isNaN(row)) return;
 
-      const isInside = (cIdx >= sC && cIdx <= eC && row >= sR && row <= eR);
-      if (!isInside) {
-        updateSelectionRange(col, row, col, row);
+        // Check if clicked cell is within current selection
+        const cur = appState.selectionRange;
+        const sC = Math.min(colIndex(cur.startCol), colIndex(cur.endCol));
+        const eC = Math.max(colIndex(cur.startCol), colIndex(cur.endCol));
+        const sR = Math.min(cur.startRow, cur.endRow);
+        const eR = Math.max(cur.startRow, cur.endRow);
+        const cIdx = colIndex(col);
+
+        const isInside = (cIdx >= sC && cIdx <= eC && row >= sR && row <= eR);
+        if (!isInside) {
+          updateSelectionRange(col, row, col, row);
+        }
+        targetCellAddr = `${col}${row}`;
       }
 
       // Synchronize Mini Toolbar values with active/anchor cell
-      const targetCellAddr = `${col}${row}`;
       const sheet = getActiveSheet();
       const cellData = (sheet && sheet.cells && sheet.cells[targetCellAddr]) || {};
 

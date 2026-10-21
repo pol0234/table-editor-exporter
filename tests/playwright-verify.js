@@ -21,11 +21,11 @@ async function runVerification() {
 
   await page.goto(fileUrl, { waitUntil: 'load' });
 
-  // 1. Verify Clean Title strictly "Tabuľkový editor" without emoji
+  // 1. Verify Professional Title strictly "Table Editor & Exporter" without emoji
   const title = (await page.textContent('.file-title')).trim();
   console.log('Page Title:', title);
-  if (title !== 'Tabuľkový editor') {
-    throw new Error(`Title expected "Tabuľkový editor", got: "${title}"`);
+  if (title !== 'Table Editor & Exporter') {
+    throw new Error(`Title expected "Table Editor & Exporter", got: "${title}"`);
   }
 
   // 2. Verify Primary Copy Button text is clean "Kopírovať" (no "pre avery", no emojis)
@@ -588,25 +588,108 @@ async function runVerification() {
     throw new Error('SVG preview does NOT contain subtle gray gridlines (#d4d4d4)!');
   }
 
-  // 30. Verify Standalone PWA Launcher Infrastructure Exists
-  console.log('Verifying standalone PWA launcher scripts...');
+  // 30. Verify Clean Desktop Launcher & Static Web Infrastructure
+  console.log('Verifying clean desktop launcher and static files...');
   const fs = await import('fs');
-  const requiredScripts = [
-    'server.js',
-    'launch.js',
-    'Spustiť-Aplikáciu.vbs',
+  const requiredFiles = [
     'Spustiť-Aplikáciu.bat',
-    'Vytvoriť-Odkaz-Na-Plochu.ps1'
+    'Vytvoriť-Odkaz-Na-Plochu.ps1',
+    'app-icon.ico',
+    'manifest.json',
+    'index.html',
+    'app.bundle.js',
+    'styles.css'
   ];
-  for (const scriptName of requiredScripts) {
-    const scriptPath = path.resolve(__dirname, '..', scriptName);
-    if (!fs.existsSync(scriptPath)) {
-      throw new Error(`Missing launcher file: ${scriptName}`);
+  for (const fileName of requiredFiles) {
+    const filePath = path.resolve(__dirname, '..', fileName);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Missing required file: ${fileName}`);
     }
   }
-  console.log('All 5 standalone PWA launcher files verified.');
+  console.log('All static files and clean desktop launcher verified.');
 
-  // 31. Capture screenshot to verification file
+  // 31. Verify Column & Row Header Click Selection
+  console.log('Testing column and row header click selection...');
+  await page.click('th.grid-header-col[data-col="B"]');
+  const selAfterColB = (await page.textContent('#formulaCellAddr')).trim();
+  console.log('Formula bar after clicking Column B header:', selAfterColB);
+  if (selAfterColB !== 'B1:B24') {
+    throw new Error(`Expected selection "B1:B24" after clicking column B header, got: "${selAfterColB}"`);
+  }
+
+  await page.click('th.grid-header-row[data-row="3"]');
+  const selAfterRow3 = (await page.textContent('#formulaCellAddr')).trim();
+  console.log('Formula bar after clicking Row 3 header:', selAfterRow3);
+  if (!selAfterRow3.startsWith('A3:')) {
+    throw new Error(`Expected selection starting with "A3:" after clicking row 3 header, got: "${selAfterRow3}"`);
+  }
+
+  // 32. Verify Column Insertion and Deletion Shifts Cells
+  console.log('Testing column insertion and deletion...');
+  // Click on cell B2 (which has a value like energy/fat)
+  await page.click('td[data-addr="B2"]');
+  const valB2Before = (await page.textContent('td[data-addr="B2"]')).trim();
+  console.log('Value in B2 before insert:', valB2Before);
+
+  // Click insert column button
+  await page.click('#btnInsertCol');
+  const valB2AfterInsert = (await page.textContent('td[data-addr="B2"]')).trim();
+  const valC2AfterInsert = (await page.textContent('td[data-addr="C2"]')).trim();
+  console.log('After insert: B2 is now:', valB2AfterInsert, '| C2 is now:', valC2AfterInsert);
+  if (valC2AfterInsert !== valB2Before) {
+    throw new Error(`Expected previous B2 value "${valB2Before}" to shift to C2, got: "${valC2AfterInsert}"`);
+  }
+
+  // Now delete the newly inserted column B to restore
+  await page.click('td[data-addr="B2"]');
+  await page.click('#btnDeleteCol');
+  const valB2AfterDelete = (await page.textContent('td[data-addr="B2"]')).trim();
+  console.log('After delete: B2 is back to:', valB2AfterDelete);
+  if (valB2AfterDelete !== valB2Before) {
+    throw new Error(`Expected B2 to be restored to "${valB2Before}", got: "${valB2AfterDelete}"`);
+  }
+
+  // 33. Verify Preview Drawer Auto-Fit on Large Selection (No Top Cutoff)
+  console.log('Testing preview drawer 2D auto-fit on large selection...');
+  // Select large area A1:D15
+  await page.click('td[data-addr="A1"]');
+  await page.mouse.move(boxA1.x + 10, boxA1.y + 10);
+  await page.mouse.down();
+  const boxD15 = await page.locator('td[data-addr="D15"]').boundingBox();
+  if (boxD15) {
+    await page.mouse.move(boxD15.x + 10, boxD15.y + 10);
+  }
+  await page.mouse.up();
+
+  // Set as export range
+  await page.click('#btnSetExportRange');
+
+  // Verify drawer alignment & transform origin
+  const drawerBodyStyles = await page.evaluate(() => {
+    const body = document.querySelector('.avery-drawer-body');
+    const svgBox = document.querySelector('.preview-svg-box');
+    return {
+      justifyContent: window.getComputedStyle(body).justifyContent,
+      transformOrigin: window.getComputedStyle(svgBox).transformOrigin,
+      transform: svgBox.style.transform
+    };
+  });
+  console.log('Drawer preview styles on large selection:', drawerBodyStyles);
+  if (drawerBodyStyles.justifyContent !== 'flex-start') {
+    throw new Error(`Expected .avery-drawer-body justifyContent "flex-start", got "${drawerBodyStyles.justifyContent}"`);
+  }
+
+  // 34. Verify Sticky Headers Removed (position: relative so headers do not cover table on scroll)
+  const headerColPosition = await page.evaluate(() => {
+    const th = document.querySelector('th.grid-header-col');
+    return window.getComputedStyle(th).position;
+  });
+  console.log('Column header position style:', headerColPosition);
+  if (headerColPosition !== 'relative') {
+    throw new Error(`Expected th.grid-header-col position "relative", got "${headerColPosition}"`);
+  }
+
+  // 35. Capture screenshot to verification file
   await page.screenshot({ path: path.resolve(__dirname, '../verification-excel-ui.png') });
   console.log('Screenshot saved to verification-excel-ui.png');
 

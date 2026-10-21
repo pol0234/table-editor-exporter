@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tabuľkový editor</title>
+  <title>Table Editor & Exporter</title>
+  <meta name="description" content="Table Editor & Exporter - Professional spreadsheet table editor with ultra-high resolution export for SVG, PNG, and JPG.">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/x-icon" href="app-icon.ico">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -24,7 +25,7 @@
       <button class="titlebar-tool-btn" id="btnTitleRedo" title="Krok dopredu (Ctrl+Y)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"></path><path d="M21 13a9 9 0 0 0-15.36-6.36L3 9"></path></svg>
       </button>
-      <span class="file-title">Tabuľkový editor</span>
+      <span class="file-title">Table Editor & Exporter</span>
       <div class="auto-save-pill">Automatické ukladanie</div>
     </div>
     <div class="titlebar-actions">
@@ -441,14 +442,14 @@
       <div class="avery-preview-tools">
         <div style="display: flex; align-items: center; gap: 6px;">
           <span style="font-size: 0.78rem; color: #555;">Lupa:</span>
-          <select id="previewZoomSelect" class="ribbon-select" style="height: 24px; padding: 1px 4px; font-size: 0.78rem;">
+          <select id="previewZoomSelect" class="ribbon-select" style="height: 24px; padding: 1px 4px; font-size: 0.78rem;" title="Lupa náhľadu">
+            <option value="fit" selected>Prispôsobiť oknu (Auto)</option>
+            <option value="1.0">100% (Reálna)</option>
             <option value="0.7">70%</option>
             <option value="0.85">85%</option>
-            <option value="1.0" selected>100% (Reálna)</option>
             <option value="1.25">125%</option>
             <option value="1.5">150%</option>
             <option value="2.0">200%</option>
-            <option value="fit">Prispôsobiť</option>
           </select>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">

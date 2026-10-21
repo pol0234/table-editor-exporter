@@ -1,7 +1,7 @@
 {
-  "name": "Tabuľkový editor",
-  "short_name": "Tabuľkový editor",
-  "description": "Profesionálny tabuľkový editor nutričných hodnôt a potravín",
+  "name": "Table Editor & Exporter",
+  "short_name": "Table Editor",
+  "description": "Professional spreadsheet table editor with ultra-high resolution export for SVG, PNG, and JPG.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
