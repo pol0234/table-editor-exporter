@@ -1,5 +1,17 @@
-# Dependencies and local skills
-.agents/
+# Dependencies
 node_modules/
+
+# Agent configurations and internal documentation
+.agents/
+AGENTS.md
+docs/
+
+# Test artifacts and screenshots
+verification-excel-ui.png
+*.log
+
+# OS generated files
 .DS_Store
 Thumbs.db
+desktop.ini
+
